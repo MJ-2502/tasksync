@@ -14,6 +14,21 @@ class _HomeScreenState extends State<HomeScreen> {
   final _auth = FirebaseAuth.instance;
   final _projectsRef = FirebaseFirestore.instance.collection('projects');
 
+  Future<Map<String, String>> _getMemberNames(List<String> memberIds) async {
+    final Map<String, String> memberNames = {};
+    
+    for (final memberId in memberIds) {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(memberId).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        // Use email as display name if name is not available
+        memberNames[memberId] = userData?['name'] ?? userData?['email'] ?? 'Unknown User';
+      }
+    }
+    
+    return memberNames;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -360,7 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () => _showProjectDialog(context),
                         icon: const Icon(Icons.add),
-                        label: const Text("New team"),
+                        label: const Text("New Project"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF116DE6),
                           foregroundColor: Colors.white,
@@ -416,34 +431,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                 return InkWell(
                                   onTap: () async {
-                                    final projectId = doc.id;
-                                    final tasksSnapshot = await _projectsRef
-                                        .doc(projectId)
-                                        .collection('tasks')
-                                        .get();
-
-                                    final tasks = tasksSnapshot.docs.map((t) {
-                                      final taskData = t.data();
-                                      return {
-                                        "title": taskData["title"] ?? "Untitled Task",
-                                        "assignee": taskData["assignee"] ?? "Unassigned",
-                                        "status": taskData["status"] ?? "In progress",
-                                        "completed": taskData["completed"] ?? false,
-                                        "startDate": (taskData["startDate"] as Timestamp?)?.toDate(),
-                                        "dueDate": (taskData["dueDate"] as Timestamp?)?.toDate(),
-                                        "priority": taskData["priority"] ?? false,
-                                      };
-                                    }).toList();
-
+                                    final memberIds = List<String>.from(projectData['memberIds'] ?? []);
+                                    final tasks = List<Map<String, dynamic>>.from(projectData['tasks'] ?? []);
+                                    final memberNames = await _getMemberNames(memberIds);
+                                    
+                                    if (!context.mounted) return;
+                                    
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => ProjectScreen(
-                                          projectId: projectId,
+                                          projectId: doc.id,
                                           projectName: projectData["title"] ?? "Untitled",
-                                          members:
-                                              List<String>.from(projectData["memberIds"] ?? []),
+                                          members: memberIds,
                                           tasks: tasks,
+                                          memberNames: memberNames,
                                         ),
                                       ),
                                     );

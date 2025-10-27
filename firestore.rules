@@ -1,0 +1,107 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- USERS COLLECTION ---
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+
+      match /notifications/{notificationId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // --- PROJECTS COLLECTION ---
+    match /projects/{projectId} {
+      allow create: if request.auth != null;
+
+      allow read: if request.auth != null &&
+        request.auth.uid in resource.data.memberIds;
+
+      // ✅ Allow owner full control
+      allow update, delete: if request.auth != null &&
+        request.auth.uid == resource.data.ownerId;
+
+      // ✅ Allow invited users to add themselves to memberIds only
+      allow update: if request.auth != null &&
+        request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1 &&
+        (
+          // Make sure it's an invited email
+          exists(/databases/$(database)/documents/project_invites/$(projectId + "_" + request.auth.token.email)) ||
+          exists(/databases/$(database)/documents/project_invites/$(projectId + "_" + request.auth.token.email.toLowerCase()))
+        );
+    }
+
+
+
+    // --- GLOBAL PROJECT INVITES ---
+    match /project_invites/{inviteId} {
+      // ✅ Allow creation if user is a member of the related project
+      allow create: if request.auth != null &&
+        exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.memberIds;
+
+      // ✅ Allow read if:
+      // - user is the invited one, OR
+      // - user is already a member of that project
+      allow read: if request.auth != null && (
+        resource.data.email == request.auth.token.email ||
+        (
+          exists(/databases/$(database)/documents/projects/$(resource.data.projectId)) &&
+          request.auth.uid in get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.memberIds
+        )
+      );
+
+      // ✅ Allow delete/update if:
+      // - the invited user deletes it (decline)
+      // - a project member revokes it
+      allow delete, update: if request.auth != null && (
+        resource.data.email == request.auth.token.email ||
+        (
+          exists(/databases/$(database)/documents/projects/$(resource.data.projectId)) &&
+          request.auth.uid in get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.memberIds
+        )
+      );
+    }
+
+    // --- ACTIVITY LOGS ---
+    match /activity_logs/{logId} {
+      allow read: if request.auth != null &&
+        request.auth.uid in get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.memberIds;
+      allow write: if false;
+    }
+
+    // --- INTERNAL SYSTEM QUEUE ---
+    match /notifications_queue/{notificationId} {
+      allow read, write: if false;
+    }
+    
+    // --- TOP-LEVEL TASKS COLLECTION ---
+    // Simple rule: authenticated users can read and write top-level tasks.
+    // Note: tasks created here don't have an owner field in the model, so
+    // we allow authenticated access. If you add ownership fields, tighten these rules.
+    match /tasks/{taskId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
+    }
+
+    // --- TASKS SUBCOLLECTION UNDER PROJECTS ---
+    // Allow project members to read/create tasks and allow the project owner
+    // to update/delete tasks. This protects documents at
+    // /projects/{projectId}/tasks/{taskId}.
+    match /projects/{projectId} {
+      match /tasks/{taskId} {
+        allow read: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.memberIds;
+
+        allow create: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.memberIds;
+
+        allow update, delete: if request.auth != null &&
+          request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId;
+      }
+    }
+  }
+}

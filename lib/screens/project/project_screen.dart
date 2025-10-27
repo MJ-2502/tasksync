@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProjectScreen extends StatefulWidget {
   final String projectId;
   final String projectName;
   final List<String> members;
   final List<Map<String, dynamic>> tasks;
+  final Map<String, String> memberNames; // Map of uid to display name/email
 
   const ProjectScreen({
     super.key,
@@ -13,6 +15,7 @@ class ProjectScreen extends StatefulWidget {
     required this.projectName,
     required this.members,
     required this.tasks,
+    required this.memberNames,
   });
 
   @override
@@ -21,6 +24,7 @@ class ProjectScreen extends StatefulWidget {
 
 class _ProjectScreenState extends State<ProjectScreen> {
   late CollectionReference _tasksRef;
+  bool _showOnlyMine = false; // filter state: false = All, true = My tasks
 
   @override
   void initState() {
@@ -29,6 +33,30 @@ class _ProjectScreenState extends State<ProjectScreen> {
         .collection('projects')
         .doc(widget.projectId)
         .collection('tasks');
+  }
+
+  bool _isAssignedToCurrentUser(String? assigneeUid) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (assigneeUid == null) return false;
+
+    // Try to match by email (preferred), then by uid
+    final currentEmail = user?.email?.toLowerCase();
+    if (currentEmail != null) {
+      final assigned = widget.memberNames[assigneeUid]?.toLowerCase();
+      if (assigned != null && assigned == currentEmail) return true;
+      // It's possible the assignee field already stores an email string
+      if (assigneeUid.toLowerCase() == currentEmail) return true;
+    }
+
+    final currentUid = user?.uid;
+    if (currentUid != null && assigneeUid == currentUid) return true;
+
+    // Also match by displayName if available
+    final displayName = user?.displayName?.toLowerCase();
+    final assignedName = widget.memberNames[assigneeUid]?.toLowerCase();
+    if (displayName != null && assignedName != null && displayName == assignedName) return true;
+
+    return false;
   }
 
   // --- Task Operations ---
@@ -98,9 +126,10 @@ class _ProjectScreenState extends State<ProjectScreen> {
                   labelText: "Assign to",
                   border: OutlineInputBorder(),
                 ),
-                items: widget.members
-                    .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                    .toList(),
+                items: widget.members.map((uid) {
+                  final displayName = widget.memberNames[uid] ?? 'Unknown User';
+                  return DropdownMenuItem(value: uid, child: Text(displayName));
+                }).toList(),
                 onChanged: (v) => setState(() => selectedAssignee = v),
               ),
               const SizedBox(height: 12),
@@ -149,7 +178,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel")),
+              child: const Text("Cancel", style: TextStyle(color: Color(0xFF116DE6)))),
           ElevatedButton(
             onPressed: () {
               if (descriptionController.text.trim().isNotEmpty) {
@@ -163,6 +192,11 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 Navigator.pop(context);
               }
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF116DE6),
+              elevation: 0,
+              foregroundColor: Colors.white,
+            ),
             child: const Text("Add Task"),
           ),
         ],
@@ -176,6 +210,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
       appBar: AppBar(
         title: Text(widget.projectName),
         backgroundColor: const Color(0xFF116DE6),
+        foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _tasksRef.orderBy('createdAt', descending: true).snapshots(),
@@ -189,14 +224,23 @@ class _ProjectScreenState extends State<ProjectScreen> {
           }
 
           final docs = snapshot.data!.docs;
+
+          // Apply filter (All vs My tasks)
+          final filteredDocs = docs.where((d) {
+            if (!_showOnlyMine) return true;
+            final data = d.data() as Map<String, dynamic>;
+            final assignee = data['assignee'] as String?;
+            return _isAssignedToCurrentUser(assignee);
+          }).toList();
+
           int completed =
-              docs.where((d) => (d.data() as Map)['completed'] == true).length;
-          int overdue = docs
+              filteredDocs.where((d) => (d.data() as Map)['completed'] == true).length;
+          int overdue = filteredDocs
               .where((d) =>
                   _isOverdue((d.data() as Map)['dueDate'],
                       (d.data() as Map)['completed'] == true))
               .length;
-          int inProgress = docs.length - completed - overdue;
+          int inProgress = filteredDocs.length - completed - overdue;
 
           return Padding(
             padding: const EdgeInsets.all(16),
@@ -216,15 +260,38 @@ class _ProjectScreenState extends State<ProjectScreen> {
                   icon: const Icon(Icons.add),
                   label: const Text("Add Task"),
                   style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(45)),
+                    minimumSize: const Size.fromHeight(45),
+                    foregroundColor: Colors.white,
+                    backgroundColor: const Color(0xFF116DE6),
+                    elevation: 0,
+                  ),
                 ),
                 const SizedBox(height: 12),
+
+                // Filter chips (moved below the add button, left-aligned)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('All'),
+                      selected: !_showOnlyMine,
+                      onSelected: (v) => setState(() => _showOnlyMine = false),
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('My tasks'),
+                      selected: _showOnlyMine,
+                      onSelected: (v) => setState(() => _showOnlyMine = v),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 Expanded(
                   child: ListView.builder(
-                    itemCount: docs.length,
+                    itemCount: filteredDocs.length,
                     itemBuilder: (context, i) {
-                      final task = docs[i].data() as Map<String, dynamic>;
-                      final id = docs[i].id;
+                      final task = filteredDocs[i].data() as Map<String, dynamic>;
+                      final id = filteredDocs[i].id;
 
                       final title = task['title'] ?? 'Untitled Task';
                       final assignee = task['assignee'] ?? 'Unassigned';
@@ -233,12 +300,13 @@ class _ProjectScreenState extends State<ProjectScreen> {
                       final isOverdue = _isOverdue(due, completed);
 
                       Color borderColor;
-                      if (completed){
-                        borderColor = Colors.green;}
-                      else if (isOverdue){
-                        borderColor = Colors.red;}
-                      else{
-                        borderColor = Colors.orange;}
+                      if (completed) {
+                        borderColor = Colors.green;
+                      } else if (isOverdue) {
+                        borderColor = Colors.red;
+                      } else {
+                        borderColor = Colors.orange;
+                      }
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
@@ -266,9 +334,9 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                       style: const TextStyle(
                                           fontWeight: FontWeight.w600)),
                                   const SizedBox(height: 4),
-                                  Text(assignee,
-                                      style: const TextStyle(
-                                          color: Colors.black54)),
+                                  Text(
+                                    widget.memberNames[assignee] ?? 'Unknown User',
+                                    style: const TextStyle(color: Colors.black54)),
                                   const SizedBox(height: 4),
                                   Text(
                                     due is Timestamp
@@ -298,16 +366,52 @@ class _ProjectScreenState extends State<ProjectScreen> {
     );
   }
 
-  Widget _buildEmptyView() => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.task_alt, size: 64, color: Colors.black26),
-            SizedBox(height: 8),
-            Text("No tasks yet. Add one above."),
-          ],
-        ),
-      );
+  Widget _buildEmptyView() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildCounter("Completed", 0, Colors.green),
+              _buildCounter("In Progress", 0, Colors.orange),
+              _buildCounter("Overdue", 0, Colors.red),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _showAddTaskDialog,
+            icon: const Icon(Icons.add),
+            label: const Text("Add Task"),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size.fromHeight(45),
+              backgroundColor: const Color(0xFF116DE6),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.task_alt, size: 64, color: Colors.black26),
+                  SizedBox(height: 8),
+                  Text("No tasks yet", 
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildCounter(String label, int count, Color color) {
     return Column(
