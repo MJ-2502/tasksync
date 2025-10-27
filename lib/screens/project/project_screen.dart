@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,6 +9,7 @@ class ProjectScreen extends StatefulWidget {
   final List<String> members;
   final List<Map<String, dynamic>> tasks;
   final Map<String, String> memberNames; // Map of uid to display name/email
+  final String ownerId;
 
   const ProjectScreen({
     super.key,
@@ -16,6 +18,7 @@ class ProjectScreen extends StatefulWidget {
     required this.members,
     required this.tasks,
     required this.memberNames,
+    required this.ownerId,
   });
 
   @override
@@ -24,6 +27,9 @@ class ProjectScreen extends StatefulWidget {
 
 class _ProjectScreenState extends State<ProjectScreen> {
   late CollectionReference _tasksRef;
+  // Track which tasks the current user has seen (per-user metadata)
+  Set<String> _seenTaskIds = {};
+  StreamSubscription<QuerySnapshot>? _seenSub;
   bool _showOnlyMine = false; // filter state: false = All, true = My tasks
 
   @override
@@ -33,6 +39,28 @@ class _ProjectScreenState extends State<ProjectScreen> {
         .collection('projects')
         .doc(widget.projectId)
         .collection('tasks');
+
+    // Subscribe to the per-user 'task_seen' subcollection so we can decide
+    // whether the 'New' badge should be shown for this user only.
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final seenRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('task_seen');
+
+      _seenSub = seenRef.snapshots().listen((snap) {
+        setState(() {
+          _seenTaskIds = snap.docs.map((d) => d.id).toSet();
+        });
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _seenSub?.cancel();
+    super.dispose();
   }
 
   bool _isAssignedToCurrentUser(String? assigneeUid) {
@@ -70,11 +98,14 @@ class _ProjectScreenState extends State<ProjectScreen> {
     await _tasksRef.add({
       'title': title,
       'assignee': assignee,
+      'createdBy': FirebaseAuth.instance.currentUser?.uid,
       'status': 'In progress',
       'startDate': startDate,
       'dueDate': dueDate,
       'completed': false,
       'priority': highPriority,
+      // Mark newly created tasks so we can highlight them in the UI.
+      'isNew': true,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -85,6 +116,17 @@ class _ProjectScreenState extends State<ProjectScreen> {
 
   Future<void> _deleteTask(String taskId) async {
     await _tasksRef.doc(taskId).delete();
+  }
+
+  Future<void> _markTaskSeen(String taskId) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final seenRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('task_seen');
+
+    await seenRef.doc(taskId).set({'seenAt': FieldValue.serverTimestamp()});
   }
 
   bool _isOverdue(dynamic due, bool completed) {
@@ -213,7 +255,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _tasksRef.orderBy('createdAt', descending: true).snapshots(),
+        stream: _tasksRef.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -232,6 +274,33 @@ class _ProjectScreenState extends State<ProjectScreen> {
             final assignee = data['assignee'] as String?;
             return _isAssignedToCurrentUser(assignee);
           }).toList();
+
+          // Sort tasks: High priority at top, completed at bottom
+          filteredDocs.sort((a, b) {
+            final aData = a.data() as Map<String, dynamic>;
+            final bData = b.data() as Map<String, dynamic>;
+            
+            final aCompleted = aData['completed'] == true;
+            final bCompleted = bData['completed'] == true;
+            
+            // If one is completed and the other isn't, completed goes to bottom
+            if (aCompleted != bCompleted) {
+              return aCompleted ? 1 : -1;
+            }
+            
+            final aHighPriority = aData['priority'] == true;
+            final bHighPriority = bData['priority'] == true;
+            
+            // If both completed or both not completed, sort by priority
+            if (aHighPriority != bHighPriority) {
+              return aHighPriority ? -1 : 1;
+            }
+            
+            // If same completion status and priority, sort by creation date
+            final aCreatedAt = (aData['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+            final bCreatedAt = (bData['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+            return bCreatedAt.compareTo(aCreatedAt); // Newer first
+          });
 
           int completed =
               filteredDocs.where((d) => (d.data() as Map)['completed'] == true).length;
@@ -308,51 +377,135 @@ class _ProjectScreenState extends State<ProjectScreen> {
                         borderColor = Colors.orange;
                       }
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: borderColor, width: 1.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Checkbox(
-                              value: completed,
-                              onChanged: (v) => _updateTask(id, {
-                                'completed': v,
-                                'status': v! ? 'Completed' : 'In progress',
-                              }),
-                            ),
-                            Expanded(
-                              child: Column(
+                      // Determine if the task is new (globally) and whether this
+                      // user has seen it yet. We only show the 'New' badge for
+                      // tasks that are globally new and NOT present in the
+                      // per-user task_seen collection.
+                      final isNewGlobal = task['isNew'] == true;
+                      final isNewForUser = isNewGlobal && !_seenTaskIds.contains(id);
+
+                      return GestureDetector(
+                        onTap: () {
+                          if (isNewForUser) {
+                            // Mark as seen for THIS user only (won't affect others).
+                            _markTaskSeen(id);
+                          }
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                                color: isNewForUser ? Colors.blue : borderColor, width: 1.6),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(title,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600)),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    widget.memberNames[assignee] ?? 'Unknown User',
-                                    style: const TextStyle(color: Colors.black54)),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    due is Timestamp
-                                        ? "Due: ${due.toDate().month}/${due.toDate().day}/${due.toDate().year}"
-                                        : "No due date",
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.black54),
+                                  // Checkbox: enabled for project owner or the assignee.
+                                  Builder(builder: (context) {
+                                    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+                                    final isOwner = currentUid != null && currentUid == widget.ownerId;
+                                    final canToggle = isOwner || _isAssignedToCurrentUser(assignee);
+
+                                    return Opacity(
+                                      opacity: canToggle ? 1.0 : 0.6,
+                                      child: Tooltip(
+                                        message: canToggle
+                                            ? (completed ? 'Mark as not completed' : 'Mark as completed')
+                                            : 'Only the assignee or project owner can change completion',
+                                        child: Checkbox(
+                                          value: completed,
+                                          onChanged: canToggle
+                                              ? (v) => _updateTask(id, {
+                                                    'completed': v,
+                                                    'status': v! ? 'Completed' : 'In progress',
+                                                  })
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(title,
+                                                  style: const TextStyle(
+                                                      fontWeight: FontWeight.w600)),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            // Priority indicator
+                                            if (task['priority'] == true)
+                                              const Icon(Icons.priority_high, color: Colors.deepOrange, size: 18),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          widget.memberNames[assignee] ?? 'Unknown User',
+                                          style: const TextStyle(color: Colors.black54)),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          due is Timestamp
+                                              ? "Due: ${due.toDate().month}/${due.toDate().day}/${due.toDate().year}"
+                                              : "No due date",
+                                          style: const TextStyle(
+                                              fontSize: 12, color: Colors.black54),
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                  // Delete icon: enabled for project owner or the task creator. Otherwise show disabled icon with tooltip.
+                                  Builder(builder: (context) {
+                                    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+                                    final taskCreator = task['createdBy'] as String?;
+                                    final isOwner = currentUid != null && currentUid == widget.ownerId;
+                                    final canDelete = isOwner || (currentUid != null && taskCreator != null && currentUid == taskCreator);
+
+                                    return Tooltip(
+                                      message: canDelete
+                                          ? 'Delete task'
+                                          : 'Only the project owner or the task creator can delete this task',
+                                      child: IconButton(
+                                        icon: Icon(Icons.delete, color: canDelete ? Colors.red : Colors.grey),
+                                        onPressed: canDelete ? () => _deleteTask(id) : null,
+                                      ),
+                                    );
+                                  }),
                                 ],
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteTask(id),
-                            ),
-                          ],
+                              // 'New' badge in the upper-right corner
+                              if (isNewForUser)
+                                Positioned(
+                                  // Position the badge to overlap the task border
+                                  // so it appears flush. Use the same border width
+                                  // offset to align precisely.
+                                  right: -12.6,
+                                  top: -12.6,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue,
+                                      // Give the badge the same border as the card so
+                                      // the two merge seamlessly.
+                                      border: Border.all(color: Colors.blue, width: 1.6),
+                                      borderRadius: const BorderRadius.only(
+                                        topRight: Radius.circular(12),
+                                        bottomLeft: Radius.circular(6),
+                                      ),
+                                    ),
+                                    child: const Text('New', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       );
                     },

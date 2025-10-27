@@ -446,6 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           members: memberIds,
                                           tasks: tasks,
                                           memberNames: memberNames,
+                                          ownerId: projectData['ownerId'] ?? '',
                                         ),
                                       ),
                                     );

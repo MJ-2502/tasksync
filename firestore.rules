@@ -10,6 +10,13 @@ service cloud.firestore {
       match /notifications/{notificationId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // Per-user 'task_seen' subcollection used to track which tasks
+      // a particular user has viewed. Only the authenticated owner may
+      // read or write their own task_seen documents.
+      match /task_seen/{seenId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // --- PROJECTS COLLECTION ---
@@ -99,8 +106,26 @@ service cloud.firestore {
         allow create: if request.auth != null &&
           request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.memberIds;
 
-        allow update, delete: if request.auth != null &&
-          request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId;
+        // Owners can update/delete any task. Project members may only update
+        // the task's completion/status fields. Members may delete a task if
+        // they are the assignee of that task.
+        allow update: if request.auth != null && (
+          // owner can update
+          request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId
+          // members may only update completion/status
+          || (
+            request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.memberIds
+            // Allow regular project members to update completion and status only
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['completed', 'status'])
+          )
+        );
+
+        allow delete: if request.auth != null && (
+          // owner can delete
+          request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId
+          // task creator may delete their own task
+          || request.auth.uid == resource.data.createdBy
+        );
       }
     }
   }
