@@ -26,6 +26,7 @@ dependencies:
   flutter_slidable: ^4.0.1     # swipe actions for task list
   flutter_colorpicker: ^1.0.3  # project/task colors
   intl: ^0.20.2                # date formatting
+  connectivity_plus: ^4.0.1
 
   # Networking (if you later use REST API backend instead of Firebase)
   http: ^1.1.0

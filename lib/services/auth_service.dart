@@ -23,9 +23,6 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // ✅ Automatically handle pending invites after signup
-      await _handlePendingInvites(email);
-
       return result.user;
     } catch (e) {
       ("❌ SignUp Error: $e");
@@ -41,9 +38,6 @@ class AuthService {
         password: password,
       );
 
-      // Automatically handle pending invites after login
-      await _handlePendingInvites(email);
-
       return result.user;
     } catch (e) {
       ("❌ Login Error: $e");
@@ -58,43 +52,4 @@ class AuthService {
 
   // --- Get current user (real-time stream) ---
   Stream<User?> get userStream => _auth.authStateChanges();
-
-// lib/services/auth_service.dart
-
-Future<void> _handlePendingInvites(String email) async {
-  final user = _auth.currentUser;
-  if (user == null) return;
-
-  final invitesSnapshot = await _firestore
-      .collection('project_invites')
-      .where('email', isEqualTo: email.toLowerCase())
-      .get();
-
-  if (invitesSnapshot.docs.isEmpty) return;
-
-  for (var invite in invitesSnapshot.docs) {
-    final data = invite.data();
-    final projectId = data['projectId'];
-    if (projectId == null) continue;
-
-    final projectRef = _firestore.collection('projects').doc(projectId);
-
-    try {
-      // Attempt to join directly without prior read
-      await projectRef.update({
-        'memberIds': FieldValue.arrayUnion([user.uid])
-      });
-
-      await invite.reference.delete();
-      ("✅ User ${user.email} joined project $projectId");
-    } on FirebaseException catch (e) {
-      if (e.code == 'permission-denied') {
-        ("⚠️ Skipped project $projectId (no permission yet)");
-      } else {
-        ("❌ Error adding to project $projectId: ${e.message}");
-      }
-    }
-  }
-}
-
 }
