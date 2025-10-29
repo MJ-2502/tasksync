@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/animated_navbar.dart';
-import 'home_screen.dart';
+import 'home/home_screen.dart';
 import 'profile_screen.dart';
 import 'calendar_screen.dart';
 

@@ -2,9 +2,9 @@
     package="com.appdev.tasksync">
 
     <application
-        android:label="tasksync"
+        android:label="TasksSync"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launch_image">
         
         <activity
             android:name=".MainActivity"
