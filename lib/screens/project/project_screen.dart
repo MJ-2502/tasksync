@@ -299,6 +299,75 @@ class _ProjectScreenState extends State<ProjectScreen> {
     );
   }
 
+
+  // --- Delete Task Confirmation Dialog ---
+  void _showDeleteTaskDialog(BuildContext context, String taskId, String taskTitle) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete this task "$taskTitle"?',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'This action cannot be undone.',
+                    style: TextStyle(fontSize: 14, color: Colors.red[700]),
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _deleteTask(taskId);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white),
+                      const SizedBox(width: 8),
+                      const Expanded(child: Text('Task deleted')),
+                    ],
+                  ),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -308,7 +377,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
           body: SafeArea(
             child: Column(
               children: [
-                // Header (matches HomeScreen header style)
+                // Header 
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
@@ -552,7 +621,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                                 return IconButton(
                                                   icon: Icon(Icons.delete,
                                                       color: canDelete ? Colors.red : Colors.grey),
-                                                  onPressed: canDelete ? () => _deleteTask(id) : null,
+                                                  onPressed: canDelete ? () => _showDeleteTaskDialog(context, id, title) : null,
                                                 );
                                               }),
                                             ],

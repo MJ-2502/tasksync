@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return memberNames;
   }
-
+  // --- Add Project ---
   Future<void> _addProject(BuildContext context, String name) async {
     setState(() => _isLoading = true);
     try {
@@ -48,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
+  // --- Edit Project ---
   Future<void> _editProject(String projectId, String newName) async {
     setState(() => _isLoading = true);
     try {
@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
+  // --- Delete Project ---
   Future<void> _deleteProject(String projectId) async {
     setState(() => _isLoading = true);
     try {
@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
+  // --- Invite Member ---
   Future<void> _inviteMember(String projectId, String email) async {
     setState(() => _isLoading = true);
     try {
@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
+  //  --- Accept Invitation ---
   Future<void> _acceptInvitation(String inviteId, String projectId) async {
     setState(() => _isLoading = true);
     try {
@@ -146,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _connectivitySub?.cancel();
     super.dispose();
   }
-
+  // --- Connectivity Listener ---
   void _initConnectivityListener() async {
     try {
       final result = await Connectivity().checkConnectivity();
@@ -165,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _isOnline = true;
     }
   }
-
+  // --- Project Dialogs ---
   void _showProjectDialog(BuildContext context, {String? projectId, String? currentTitle}) {
     final controller = TextEditingController(text: currentTitle ?? "");
     showDialog(
@@ -198,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
+  // --- Invite Member Dialog ---
   void _showInviteDialog(BuildContext context, String projectId) {
     final controller = TextEditingController();
     bool isChecking = false;
@@ -427,7 +427,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
+  // --- Invitations Dialog ---
   void _showInvitationsDialog(BuildContext context, List<QueryDocumentSnapshot> invites) {
     showDialog(
       context: context,
@@ -598,6 +598,73 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
+    );
+  }
+  // --- Delete Project Dialog ---
+
+
+  void _showDeleteProjectDialog(BuildContext context, String projectId, String projectName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete this project "$projectName"?',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            const Center(
+              child: Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                'This action cannot be undone.\nAll tasks and data will be permanently deleted.',
+                style: TextStyle(fontSize: 12, color: Colors.red[700]),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _deleteProject(projectId);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text('Project "$projectName" deleted')),
+                    ],
+                  ),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -909,7 +976,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   const SizedBox(width: 8),
                                                   IconButton(
                                                     icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                                    onPressed: () => _deleteProject(doc.id),
+                                                    onPressed: () => _showDeleteProjectDialog(context, doc.id, projectData["title"] ?? "Untitled"),
                                                     iconSize: 20,
                                                     padding: EdgeInsets.zero,
                                                     constraints: const BoxConstraints(),
