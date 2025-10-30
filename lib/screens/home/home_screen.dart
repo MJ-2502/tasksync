@@ -201,29 +201,229 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showInviteDialog(BuildContext context, String projectId) {
     final controller = TextEditingController();
+    bool isChecking = false;
+    String? errorMessage;
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Invite member'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'Email'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final email = controller.text.trim();
-              if (email.isEmpty) return;
-              Navigator.of(context).pop();
-              await _inviteMember(projectId, email);
-            },
-            child: const Text('Send'),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Invite Member'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    hintText: 'user@example.com',
+                    prefixIcon: Icon(Icons.email_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Enter the email address of the person you want to invite',
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                
+                // Error/Success message below input field
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: errorMessage!.startsWith('✓') 
+                          ? Colors.green[50]
+                          : errorMessage!.startsWith('⚠')
+                              ? Colors.orange[50]
+                              : Colors.red[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: errorMessage!.startsWith('✓')
+                            ? Colors.green[300]!
+                            : errorMessage!.startsWith('⚠')
+                                ? Colors.orange[300]!
+                                : Colors.red[300]!,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          errorMessage!.startsWith('✓')
+                              ? Icons.check_circle_outline
+                              : errorMessage!.startsWith('⚠')
+                                  ? Icons.warning_amber_outlined
+                                  : Icons.error_outline,
+                          color: errorMessage!.startsWith('✓')
+                              ? Colors.green[700]
+                              : errorMessage!.startsWith('⚠')
+                                  ? Colors.orange[700]
+                                  : Colors.red[700],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            errorMessage!,
+                            style: TextStyle(
+                              color: errorMessage!.startsWith('✓')
+                                  ? Colors.green[700]
+                                  : errorMessage!.startsWith('⚠')
+                                      ? Colors.orange[700]
+                                      : Colors.red[700],
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isChecking ? null : () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: isChecking ? null : () async {
+                  final email = controller.text.trim();
+                  
+                  // Clear previous error
+                  setState(() => errorMessage = null);
+                  
+                  // Basic validation
+                  if (email.isEmpty) {
+                    setState(() => errorMessage = 'Please enter an email address');
+                    return;
+                  }
+
+                  // Email format validation
+                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}');
+                  if (!emailRegex.hasMatch(email)) {
+                    setState(() => errorMessage = 'Please enter a valid email address');
+                    return;
+                  }
+
+                  // Check if inviting yourself
+                  final currentUserEmail = FirebaseAuth.instance.currentUser?.email?.toLowerCase();
+                  if (email.toLowerCase() == currentUserEmail) {
+                    setState(() => errorMessage = 'You cannot invite yourself');
+                    return;
+                  }
+
+                  setState(() {
+                    isChecking = true;
+                    errorMessage = null;
+                  });
+
+                  try {
+                    // Check if user exists in the database
+                    final normalizedEmail = email.toLowerCase();
+                    final usersQuery = await FirebaseFirestore.instance
+                        .collection('users')
+                        .where('email', isEqualTo: normalizedEmail)
+                        .limit(1)
+                        .get();
+
+                    if (usersQuery.docs.isEmpty) {
+                      setState(() {
+                        isChecking = false;
+                        errorMessage = 'No user found with email: $email';
+                      });
+                      return;
+                    }
+
+                    final userDoc = usersQuery.docs.first;
+                    final userId = userDoc.id;
+                    final userName = userDoc.data()['name'] ?? email;
+
+                    // Check if user is already a member
+                    final projectDoc = await FirebaseFirestore.instance
+                        .collection('projects')
+                        .doc(projectId)
+                        .get();
+                    
+                    if (projectDoc.exists) {
+                      final projectData = projectDoc.data() as Map<String, dynamic>;
+                      final memberIds = List<String>.from(projectData['memberIds'] ?? []);
+                      
+                      if (memberIds.contains(userId)) {
+                        setState(() {
+                          isChecking = false;
+                          errorMessage = '⚠ $userName is already a member of this project';
+                        });
+                        return;
+                      }
+
+                      // Check if user already has a pending invitation
+                      final inviteId = '${projectId}_$normalizedEmail';
+                      final existingInvite = await FirebaseFirestore.instance
+                          .collection('project_invites')
+                          .doc(inviteId)
+                          .get();
+
+                      if (existingInvite.exists) {
+                        setState(() {
+                          isChecking = false;
+                          errorMessage = '⚠ $userName already has a pending invitation';
+                        });
+                        return;
+                      }
+                    }
+
+                    // All checks passed, send the invitation
+                    Navigator.of(context).pop();
+                    await _inviteMember(projectId, email);
+                    
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.check_circle, color: Colors.white),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text('Invitation sent to $userName')),
+                          ],
+                        ),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    );
+                    
+                  } catch (e) {
+                    setState(() {
+                      isChecking = false;
+                      errorMessage = 'Error: ${e.toString()}';
+                    });
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF116DE6),
+                  foregroundColor: Colors.white,
+                ),
+                child: isChecking
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text('Send Invitation'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
