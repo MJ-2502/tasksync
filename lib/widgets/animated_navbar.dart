@@ -37,7 +37,7 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           
-          _buildNavItem(icon: Icons.calendar_today, label: "Calendar", index: 0),
+          _buildNavItem(icon: Icons.event, label: "Calendar", index: 0),
           _buildNavItem(icon: Icons.home, label: "Home", index: 1),
           _buildNavItem(icon: Icons.person, label: "Profile", index: 2),
         ],

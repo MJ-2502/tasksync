@@ -131,6 +131,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     children: [
                       SizedBox(
+                        width: 35,
+                        height: 35,
                         child: Image.asset(
                           'assets/icons/profile.png',
                           fit: BoxFit.contain,

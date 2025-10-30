@@ -385,7 +385,21 @@ class _ProjectScreenState extends State<ProjectScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.checklist, color: Color(0xFF116DE6), size: 26),
+                            SizedBox(
+                              width: 35,
+                              height: 35,
+                              child: Image.asset(
+                                'assets/icons/tasklist.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.task_alt,
+                                    size: 28,
+                                    color: Color(0xFF116DE6),
+                                  );
+                                },
+                              ),
+                            ),
                           const SizedBox(width: 8),
                           Text(
                             widget.projectName,
@@ -461,7 +475,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                                 children: [
                                   _buildCounter("Completed", completed, Colors.green),
-                                  _buildCounter("In Progress", inProgress, Colors.orange),
+                                  _buildCounter("Pending", inProgress, Colors.orange),
                                   _buildCounter("Overdue", overdue, Colors.red),
                                 ],
                               ),
@@ -630,24 +644,36 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                         // High-priority icon in the top-left corner
                                         if (task['priority'] == true)
                                           Positioned(
-                                            left: 1.5,
-                                            top: 1.5,
+                                            left: 3,
+                                            top: 4,
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
-                                              decoration: const BoxDecoration(
-                                                color: Colors.deepOrange,
-                                                borderRadius: BorderRadius.only(
-                                                  topLeft: Radius.circular(10),
-                                                  bottomRight: Radius.circular(6),
-                                                ),
+                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.red.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(4),
                                               ),
-                                              child: const Icon(
-                                                Icons.priority_high,
-                                                color: Color.fromARGB(255, 255, 255, 255),
-                                                size: 22,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: const [
+                                                  Icon(
+                                                    Icons.priority_high,
+                                                    size: 12,
+                                                    color: Colors.red,
+                                                  ),
+                                                  SizedBox(width: 2),
+                                                  Text(
+                                                    'HIGH',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Colors.red,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ),
+
 
                                         // 🟦 'New' badge overlay
                                         if (isNewForUser)

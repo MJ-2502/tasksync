@@ -712,7 +712,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           // Online / Offline indicator (tap to show a quick message)
                           IconButton(
                             icon: Icon(
-                              _isOnline ? Icons.link : Icons.link_off,
+                              _isOnline ? Icons.wifi : Icons.wifi_off,
                               color: _isOnline ? Colors.green : Colors.grey,
                             ),
                             onPressed: () {
