@@ -416,14 +416,30 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Color(0xFF116DE6), size: 28),
-                          SizedBox(width: 8),
-                          Text("TaskSync",
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: Image.asset(
+                                'assets/icons/logo.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.task_alt,
+                                    size: 28,
+                                    color: Color(0xFF116DE6),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              "TaskSync",
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
                       Row(
                         children: [
                           // Online / Offline indicator (tap to show a quick message)
@@ -727,7 +743,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.check_circle, color: Color(0xFF116DE6), size: 24),
+                                      SizedBox(
+                                        width: 28,
+                                        height: 28,
+                                        child: Image.asset(
+                                          'assets/icons/logo.png',
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return const Icon(
+                                              Icons.task_alt,
+                                              size: 28,
+                                              color: Color(0xFF116DE6),
+                                            );
+                                          },
+                                        ),
+                                      ),
                                   const SizedBox(width: 8),
                                   const Text(
                                     "Welcome to TaskSync",

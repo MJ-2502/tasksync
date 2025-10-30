@@ -90,8 +90,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 children: [
                   // App Logo/Icon
                   Container(
-                    width: 80,
-                    height: 80,
+                    width: 110,
+                    height: 110,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       // ignore: deprecated_member_use
@@ -105,7 +105,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         // Fallback to icon if image not found
                         return const Icon(
                           Icons.person_add_alt_1,
-                          size: 40,
+                          size: 110,
                           color: Color(0xFF116DE6),
                         );
                       },

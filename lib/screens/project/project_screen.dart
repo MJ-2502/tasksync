@@ -316,7 +316,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.work, color: Color(0xFF116DE6), size: 26),
+                          const Icon(Icons.checklist, color: Color(0xFF116DE6), size: 26),
                           const SizedBox(width: 8),
                           Text(
                             widget.projectName,
@@ -338,7 +338,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 // Main content container (matches HomeScreen body)
                 Expanded(
                   child: Container(
-                    color: const Color(0xFFF5F5F5),
+                    color: const Color.fromARGB(255, 255, 255, 255),
                     child: StreamBuilder<QuerySnapshot>(
                       stream: _tasksRef.snapshots(),
                       builder: (context, snapshot) {
@@ -473,7 +473,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                           margin: const EdgeInsets.only(bottom: 12),
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: Colors.white,
+                                            color: const Color.fromARGB(255, 255, 255, 255),
                                             borderRadius: BorderRadius.circular(12),
                                             border: Border.all(
                                               color: isNewForUser ? Colors.blue : borderColor,
@@ -481,7 +481,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                             ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black.withOpacity(0.05),
+                                                color: Colors.black.withOpacity(0.3),
                                                 blurRadius: 4,
                                                 offset: const Offset(0, 2),
                                               ),
