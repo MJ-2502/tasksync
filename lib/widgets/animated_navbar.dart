@@ -20,7 +20,7 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;  // ADD THIS
+    final isDark = Theme.of(context).brightness == Brightness.dark;  
 
     return Container(
       height: 90,
@@ -29,7 +29,7 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black45 : Colors.black12,  // CHANGED - darker shadow for dark mode
+            color: isDark ? Colors.black45 : Colors.black12,  
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -51,7 +51,7 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
     required String label,
     required int index,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;  // ADD THIS
+    final isDark = Theme.of(context).brightness == Brightness.dark;  
     bool isSelected = widget.currentIndex == index;
 
     return GestureDetector(

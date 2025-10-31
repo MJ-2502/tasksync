@@ -49,10 +49,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Provider.of<AuthService>(context, listen: false);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,  
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -100,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: isDark ? Colors.white60 : Colors.grey[600],  // CHANGED
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -109,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,  
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -137,7 +138,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,  // CHANGED
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -145,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: Color(0xFF116DE6), width: 2),
                             ),
                             filled: true,
-                            fillColor: Colors.grey[50],
+                            fillColor: isDark ? Theme.of(context).colorScheme.surface : Colors.grey[50],  // CHANGED
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -174,7 +177,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,  // CHANGED
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -182,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: Color(0xFF116DE6), width: 2),
                             ),
                             filled: true,
-                            fillColor: Colors.grey[50],
+                            fillColor: isDark ? Theme.of(context).colorScheme.surface : Colors.grey[50],  // CHANGED
                           ),
                         ),
 
@@ -274,7 +279,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       "Don't have an account? ",
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.grey[600],  // CHANGED
+                      ),
                     ),
                     GestureDetector(
                       onTap: () {
