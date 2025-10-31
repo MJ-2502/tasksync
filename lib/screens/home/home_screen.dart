@@ -41,7 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final uid = _auth.currentUser!.uid;
       await _projectsRef.add({
         "title": name,
-        "createdBy": uid,
+        "ownerId": uid,  // ✅ Changed from "createdBy" to "ownerId"
+        "memberIds": [uid],  // ✅ Must include the creator as a member
         "createdAt": FieldValue.serverTimestamp(),
       });
     } finally {
@@ -71,11 +72,12 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isLoading = true);
     try {
       final uid = _auth.currentUser!.uid;
-      final normalizedEmail = email.toLowerCase();
+      final normalizedEmail = email.trim().toLowerCase(); // ✅ Add trim()
       final inviteId = '${projectId}_$normalizedEmail';
+      
       await FirebaseFirestore.instance.collection('project_invites').doc(inviteId).set({
         "projectId": projectId,
-        "email": normalizedEmail,
+        "email": normalizedEmail, // ✅ Store lowercase
         "invitedBy": uid,
         "createdAt": FieldValue.serverTimestamp(),
       });
@@ -754,7 +756,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               return StreamBuilder<QuerySnapshot>(
                                 stream: FirebaseFirestore.instance
                                     .collection('project_invites')
-                                    .where('email', isEqualTo: currentEmailForInvites)
+                                    .where('email', isEqualTo: currentEmailForInvites.toLowerCase())
                                     .snapshots(),
                                 builder: (context, snapshot) {
                                   final hasInvites =
@@ -803,6 +805,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SizedBox(height: 12),
                         // Your teams section
                         const Text(
                           "My teams",
@@ -888,107 +891,98 @@ class _HomeScreenState extends State<HomeScreen> {
                               itemBuilder: (context, index) {
                                 final doc = projects[index];
                                 if (!doc.exists) return const SizedBox.shrink();
-                                return StreamBuilder<DocumentSnapshot>(
-                                  stream: _projectsRef.doc(doc.id).snapshots(),
-                                  builder: (context, projectSnapshot) {
-                                    if (!projectSnapshot.hasData) {
-                                      return const SizedBox.shrink();
-                                    }
+                                
+                                // ✅ Get data directly from the doc instead of nested StreamBuilder
+                                final projectData = doc.data() as Map<String, dynamic>;
+                                final memberCount = (projectData["memberIds"] as List?)?.length ?? 0;
 
-                                    final projectData =
-                                        projectSnapshot.data!.data() as Map<String, dynamic>;
-                                    final memberCount =
-                                        (projectData["memberIds"] as List?)?.length ?? 0;
-
-                                    return InkWell(
-                                      onTap: () async {
-                                        final memberIds = List<String>.from(projectData['memberIds'] ?? []);
-                                        final tasks = List<Map<String, dynamic>>.from(projectData['tasks'] ?? []);
-                                        final memberNames = await _getMemberNames(memberIds);
-                                        
-                                        if (!context.mounted) return;
-                                        
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ProjectScreen(
-                                              projectId: doc.id,
-                                              projectName: projectData["title"] ?? "Untitled",
-                                              members: memberIds,
-                                              tasks: tasks,
-                                              memberNames: memberNames,
-                                              ownerId: projectData['ownerId'] ?? '',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        margin: const EdgeInsets.only(bottom: 12),
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Colors.grey[200]!, width: 1),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  projectData["title"] ?? "Untitled",
-                                                  style: const TextStyle(
-                                                      fontSize: 14, fontWeight: FontWeight.w600),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  "$memberCount Members",
-                                                  style: const TextStyle(
-                                                      fontSize: 12, color: Colors.black54),
-                                                ),
-                                              ],
-                                            ),
-                                            // Edit/Delete buttons for project owner
-                                            // Move variable declarations outside the widget tree
-                                            Row(
-                                              children: [
-                                                if (FirebaseAuth.instance.currentUser?.uid == projectData['ownerId']) ...[
-                                                  IconButton(
-                                                    icon: const Icon(Icons.person_add, color: Colors.green, size: 20),
-                                                    onPressed: () => _showInviteDialog(context, doc.id),
-                                                    iconSize: 20,
-                                                    padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  IconButton(
-                                                    icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                                                    onPressed: () => _showProjectDialog(
-                                                      context,
-                                                      projectId: doc.id,
-                                                      currentTitle: projectData["title"],
-                                                    ),
-                                                    iconSize: 20,
-                                                    padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  IconButton(
-                                                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                                    onPressed: () => _showDeleteProjectDialog(context, doc.id, projectData["title"] ?? "Untitled"),
-                                                    iconSize: 20,
-                                                    padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ],
+                                return InkWell(
+                                  onTap: () async {
+                                    final memberIds = List<String>.from(projectData['memberIds'] ?? []);
+                                    final tasks = List<Map<String, dynamic>>.from(projectData['tasks'] ?? []);
+                                    final memberNames = await _getMemberNames(memberIds);
+                                    
+                                    if (!context.mounted) return;
+                                    
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ProjectScreen(
+                                          projectId: doc.id,
+                                          projectName: projectData["title"] ?? "Untitled",
+                                          members: memberIds,
+                                          tasks: tasks,
+                                          memberNames: memberNames,
+                                          ownerId: projectData['ownerId'] ?? '',
                                         ),
                                       ),
                                     );
                                   },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.grey[200]!, width: 1),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              projectData["title"] ?? "Untitled",
+                                              style: const TextStyle(
+                                                  fontSize: 14, fontWeight: FontWeight.w600),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              "$memberCount Members",
+                                              style: const TextStyle(
+                                                  fontSize: 12, color: Colors.black54),
+                                            ),
+                                          ],
+                                        ),
+                                        // Edit/Delete buttons for project owner
+                                        Row(
+                                          children: [
+                                            if (FirebaseAuth.instance.currentUser?.uid == projectData['ownerId']) ...[
+                                              IconButton(
+                                                icon: const Icon(Icons.person_add, color: Colors.green, size: 20),
+                                                onPressed: () => _showInviteDialog(context, doc.id),
+                                                iconSize: 20,
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              IconButton(
+                                                icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                                onPressed: () => _showProjectDialog(
+                                                  context,
+                                                  projectId: doc.id,
+                                                  currentTitle: projectData["title"],
+                                                ),
+                                                iconSize: 20,
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                                onPressed: () => _showDeleteProjectDialog(
+                                                    context, doc.id, projectData["title"] ?? "Untitled"),
+                                                iconSize: 20,
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 );
                               },
                             );
