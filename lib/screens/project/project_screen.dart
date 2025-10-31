@@ -125,9 +125,9 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                Icon(Icons.check_circle, color: Theme.of(context).cardColor, size: 20),
                 SizedBox(width: 8),
                 Text('Task created successfully'),
               ],
@@ -535,20 +535,23 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { 
+    final isDark = Theme.of(context).brightness == Brightness.dark;  
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
             // Header
             Container(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back),
+                    icon: Icon(Icons.arrow_back,
+                    color: isDark ? Colors.white : Colors.black87,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 8),
@@ -574,25 +577,29 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
                       children: [
                         Text(
                           widget.projectName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87, 
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           '${widget.members.length} member${widget.members.length != 1 ? 's' : ''}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.black54,
+                            color: isDark ? Colors.white60 : Colors.black54,
                           ),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.more_vert),
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: isDark ? Colors.white : Colors.black87,
+                      ),
                     onPressed: () {},
                   ),
                 ],
@@ -687,11 +694,11 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
                         // Filter chips
                         Row(
                           children: [
-                            const Text(
+                            Text(
                               'Show:',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black87,
+                                color: isDark ? Colors.white : Colors.black87,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -730,13 +737,16 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
                               padding: const EdgeInsets.all(32),
                               child: Column(
                                 children: [
-                                  Icon(Icons.filter_list_off, size: 64, color: Colors.grey[400]),
+                                  Icon(
+                                    Icons.filter_list_off,
+                                    size: 64,
+                                    color: isDark ? Colors.grey[600] : Colors.grey[400]),
                                   const SizedBox(height: 16),
                                   Text(
                                     _showOnlyMine ? 'No tasks assigned to you' : 'No tasks found',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
-                                      color: Colors.black54,
+                                      color: isDark ? Colors.white60 : Colors.black54,
                                     ),
                                   ),
                                 ],
@@ -794,6 +804,7 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
   }
 
   Widget _buildStatCard(String label, int count, IconData icon, Color bgColor, Color iconColor) {
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -836,6 +847,7 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
     required bool priority,
     required bool isNew,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
     final isOwner = currentUid == widget.ownerId;
     final canToggle = isOwner || _isAssignedToCurrentUser(assignee);
@@ -864,7 +876,7 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -880,7 +892,7 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
                       ? Colors.green.withOpacity(0.3)
                       : isOverdue
                           ? Colors.red.withOpacity(0.3)
-                          : Colors.grey[200]!,
+                          : Theme.of(context).dividerColor, 
               width: isNew ? 2 : 1,
             ),
           ),
@@ -921,7 +933,9 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                               decoration: completed ? TextDecoration.lineThrough : null,
-                              color: completed ? Colors.black45 : Colors.black87,
+                              color: completed
+                                  ? (isDark ? Colors.white38 : Colors.black45)
+                                  : (isDark ? Colors.white : Colors.black87),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -1037,6 +1051,8 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
   }
 
   Widget _buildEmptyView() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -1046,7 +1062,9 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFFE3F2FD),
+                color: isDark
+                    ? const Color(0xFF1E3A5F) // ADDED - dark blue for dark mode
+                    : const Color(0xFFE3F2FD), // light blue for light mode
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -1056,12 +1074,12 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               "No Tasks Yet",
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: isDark ? Colors.white : Colors.black87, 
               ),
             ),
             const SizedBox(height: 8),
@@ -1070,7 +1088,7 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[600],
+                color: isDark ? Colors.white60 : Colors.grey[600],
               ),
             ),
           ],

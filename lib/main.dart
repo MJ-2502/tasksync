@@ -3,8 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+import 'providers/theme_provider.dart';
+import 'themes/app_theme.dart';
 import 'services/auth_service.dart';
-import 'services/database_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/main_navigation.dart'; 
@@ -14,7 +15,24 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const TaskSyncApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        // Provide AuthService as a regular Provider (not ChangeNotifier)
+        Provider(create: (_) => AuthService()),
+        
+        // ThemeProvider as ChangeNotifier
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        
+        // Stream provider for Firebase Auth state
+        StreamProvider<User?>(
+          create: (_) => FirebaseAuth.instance.authStateChanges(),
+          initialData: null,
+        ),
+      ],
+      child: const TaskSyncApp(),
+    ),
+  );
 }
 
 class TaskSyncApp extends StatelessWidget {
@@ -22,24 +40,24 @@ class TaskSyncApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<AuthService>(create: (_) => AuthService()),
-        Provider<TaskService>(create: (_) => TaskService()),
-        StreamProvider<User?>(
-          create: (context) => context.read<AuthService>().userStream,
-          initialData: null,
-        ),
-      ],
-      child: MaterialApp(
-        title: 'TaskSync',
-        theme: ThemeData(primarySwatch: Colors.blue),
-        home: const AuthWrapper(),
-        routes: {
-          '/login': (context) => const LoginScreen(),
-          '/signup': (context) => const SignupScreen(),
-        },
-      ),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          title: 'TaskSync',
+          debugShowCheckedModeBanner: false,
+          
+          // Apply themes
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider.themeMode,
+          
+          home: const AuthWrapper(),
+          routes: {
+            '/login': (context) => const LoginScreen(),
+            '/signup': (context) => const SignupScreen(),
+          },
+        );
+      },
     );
   }
 }

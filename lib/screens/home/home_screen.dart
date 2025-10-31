@@ -15,7 +15,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _auth = FirebaseAuth.instance;
   final _projectsRef = FirebaseFirestore.instance.collection('projects');
-  // Connectivity
   bool _isOnline = true;
   bool _isLoading = false;
   StreamSubscription<ConnectivityResult>? _connectivitySub;
@@ -27,29 +26,28 @@ class _HomeScreenState extends State<HomeScreen> {
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(memberId).get();
       if (userDoc.exists) {
         final userData = userDoc.data();
-        // Use email as display name if name is not available
         memberNames[memberId] = userData?['name'] ?? userData?['email'] ?? 'Unknown User';
       }
     }
     
     return memberNames;
   }
-  // --- Add Project ---
+
   Future<void> _addProject(BuildContext context, String name) async {
     setState(() => _isLoading = true);
     try {
       final uid = _auth.currentUser!.uid;
       await _projectsRef.add({
         "title": name,
-        "ownerId": uid,  // ✅ Changed from "createdBy" to "ownerId"
-        "memberIds": [uid],  // ✅ Must include the creator as a member
+        "ownerId": uid,
+        "memberIds": [uid],
         "createdAt": FieldValue.serverTimestamp(),
       });
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  // --- Edit Project ---
+
   Future<void> _editProject(String projectId, String newName) async {
     setState(() => _isLoading = true);
     try {
@@ -58,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  // --- Delete Project ---
+
   Future<void> _deleteProject(String projectId) async {
     setState(() => _isLoading = true);
     try {
@@ -67,17 +65,17 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  // --- Invite Member ---
+
   Future<void> _inviteMember(String projectId, String email) async {
     setState(() => _isLoading = true);
     try {
       final uid = _auth.currentUser!.uid;
-      final normalizedEmail = email.trim().toLowerCase(); // ✅ Add trim()
+      final normalizedEmail = email.trim().toLowerCase();
       final inviteId = '${projectId}_$normalizedEmail';
       
       await FirebaseFirestore.instance.collection('project_invites').doc(inviteId).set({
         "projectId": projectId,
-        "email": normalizedEmail, // ✅ Store lowercase
+        "email": normalizedEmail,
         "invitedBy": uid,
         "createdAt": FieldValue.serverTimestamp(),
       });
@@ -85,13 +83,12 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  //  --- Accept Invitation ---
+
   Future<void> _acceptInvitation(String inviteId, String projectId) async {
     setState(() => _isLoading = true);
     try {
       final uid = _auth.currentUser!.uid;
       
-      // First get the project to check current memberIds
       final projectDoc = await _projectsRef.doc(projectId).get();
       if (!projectDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -106,7 +103,6 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!memberIds.contains(uid)) {
         memberIds.add(uid);
         
-        // Update project with new memberIds array
         await FirebaseFirestore.instance.runTransaction((tx) async {
           tx.update(_projectsRef.doc(projectId), {
             'memberIds': memberIds,
@@ -139,7 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Start listening to connectivity changes
     _initConnectivityListener();
   }
 
@@ -148,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _connectivitySub?.cancel();
     super.dispose();
   }
-  // --- Connectivity Listener ---
+
   void _initConnectivityListener() async {
     try {
       final result = await Connectivity().checkConnectivity();
@@ -167,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _isOnline = true;
     }
   }
-  // --- Project Dialogs ---
+
   void _showProjectDialog(BuildContext context, {String? projectId, String? currentTitle}) {
     final controller = TextEditingController(text: currentTitle ?? "");
     showDialog(
@@ -200,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  // --- Invite Member Dialog ---
+
   void _showInviteDialog(BuildContext context, String projectId) {
     final controller = TextEditingController();
     bool isChecking = false;
@@ -227,12 +222,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(  // CHANGED - removed const
                   'Enter the email address of the person you want to invite',
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 12, 
+                    color: Theme.of(context).textTheme.bodySmall?.color,  // CHANGED
+                  ),
                 ),
                 
-                // Error/Success message below input field
                 if (errorMessage != null) ...[
                   const SizedBox(height: 12),
                   Container(
@@ -240,14 +237,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(
                       color: errorMessage!.startsWith('✓') 
                           ? Colors.green[50]
-                          : errorMessage!.startsWith('⚠')
+                          : errorMessage!.startsWith('⚠ ')
                               ? Colors.orange[50]
                               : Colors.red[50],
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: errorMessage!.startsWith('✓')
                             ? Colors.green[300]!
-                            : errorMessage!.startsWith('⚠')
+                            : errorMessage!.startsWith('⚠ ')
                                 ? Colors.orange[300]!
                                 : Colors.red[300]!,
                       ),
@@ -257,12 +254,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         Icon(
                           errorMessage!.startsWith('✓')
                               ? Icons.check_circle_outline
-                              : errorMessage!.startsWith('⚠')
+                              : errorMessage!.startsWith('⚠ ')
                                   ? Icons.warning_amber_outlined
                                   : Icons.error_outline,
                           color: errorMessage!.startsWith('✓')
                               ? Colors.green[700]
-                              : errorMessage!.startsWith('⚠')
+                              : errorMessage!.startsWith('⚠ ')
                                   ? Colors.orange[700]
                                   : Colors.red[700],
                           size: 20,
@@ -274,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               color: errorMessage!.startsWith('✓')
                                   ? Colors.green[700]
-                                  : errorMessage!.startsWith('⚠')
+                                  : errorMessage!.startsWith('⚠ ')
                                       ? Colors.orange[700]
                                       : Colors.red[700],
                               fontSize: 13,
@@ -296,23 +293,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: isChecking ? null : () async {
                   final email = controller.text.trim();
                   
-                  // Clear previous error
                   setState(() => errorMessage = null);
                   
-                  // Basic validation
                   if (email.isEmpty) {
                     setState(() => errorMessage = 'Please enter an email address');
                     return;
                   }
 
-                  // Email format validation
                   final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}');
                   if (!emailRegex.hasMatch(email)) {
                     setState(() => errorMessage = 'Please enter a valid email address');
                     return;
                   }
 
-                  // Check if inviting yourself
                   final currentUserEmail = FirebaseAuth.instance.currentUser?.email?.toLowerCase();
                   if (email.toLowerCase() == currentUserEmail) {
                     setState(() => errorMessage = 'You cannot invite yourself');
@@ -325,7 +318,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   });
 
                   try {
-                    // Check if user exists in the database
                     final normalizedEmail = email.toLowerCase();
                     final usersQuery = await FirebaseFirestore.instance
                         .collection('users')
@@ -345,7 +337,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     final userId = userDoc.id;
                     final userName = userDoc.data()['name'] ?? email;
 
-                    // Check if user is already a member
                     final projectDoc = await FirebaseFirestore.instance
                         .collection('projects')
                         .doc(projectId)
@@ -358,12 +349,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (memberIds.contains(userId)) {
                         setState(() {
                           isChecking = false;
-                          errorMessage = '⚠ $userName is already a member of this project';
+                          errorMessage = '⚠  $userName is already a member of this project';
                         });
                         return;
                       }
 
-                      // Check if user already has a pending invitation
                       final inviteId = '${projectId}_$normalizedEmail';
                       final existingInvite = await FirebaseFirestore.instance
                           .collection('project_invites')
@@ -373,13 +363,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (existingInvite.exists) {
                         setState(() {
                           isChecking = false;
-                          errorMessage = '⚠ $userName already has a pending invitation';
+                          errorMessage = '⚠  $userName already has a pending invitation';
                         });
                         return;
                       }
                     }
 
-                    // All checks passed, send the invitation
                     Navigator.of(context).pop();
                     await _inviteMember(projectId, email);
                     
@@ -429,7 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  // --- Invitations Dialog ---
+
   void _showInvitationsDialog(BuildContext context, List<QueryDocumentSnapshot> invites) {
     showDialog(
       context: context,
@@ -529,7 +518,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           const SizedBox(height: 6),
-                                          Text('Invited by: $inviterEmail', style: const TextStyle(color: Colors.black54)),
+                                          Text(
+                                            'Invited by: $inviterEmail', 
+                                            style: TextStyle(
+                                              color: Theme.of(context).textTheme.bodySmall?.color,  // CHANGED
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -569,8 +563,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   TextButton(onPressed: () => Navigator.pop(context), child: const Text('No')),
                                                   TextButton(
                                                     onPressed: () async {
-                                                      Navigator.pop(context); // close confirmation
-                                                      Navigator.pop(context); // close invites dialog
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
                                                       await invite.reference.delete();
                                                       if (!context.mounted) return;
                                                       ScaffoldMessenger.of(context).showSnackBar(
@@ -602,8 +596,6 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-  // --- Delete Project Dialog ---
-
 
   void _showDeleteProjectDialog(BuildContext context, String projectId, String projectName) {
     showDialog(
@@ -672,10 +664,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;  // ADD THIS
+
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: SafeArea(
             child: Column(
               children: [
@@ -685,33 +679,36 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 28,
-                              height: 28,
-                              child: Image.asset(
-                                'assets/icons/logo.png',
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.task_alt,
-                                    size: 28,
-                                    color: Color(0xFF116DE6),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              "TaskSync",
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
                       Row(
                         children: [
-                          // Online / Offline indicator (tap to show a quick message)
+                          SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: Image.asset(
+                              'assets/icons/logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.task_alt,
+                                  size: 28,
+                                  color: Color(0xFF116DE6),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(  // CHANGED - removed const
+                            "TaskSync",
+                            style: TextStyle(
+                              fontSize: 20, 
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black87,  // ADDED
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
                           IconButton(
                             icon: Icon(
                               _isOnline ? Icons.wifi : Icons.wifi_off,
@@ -725,25 +722,24 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                           ),
                           const SizedBox(width: 8),
-                          // Invitation mail icon with red dot indicator
                           Builder(
                             builder: (context) {
                               final currentEmailForInvites =
                                   FirebaseAuth.instance.currentUser?.email?.toLowerCase();
 
-                              // If user doesn't have an email (e.g. anonymous), don't start
-                              // the invites query because Firestore rules will reject it.
                               if (currentEmailForInvites == null) {
                                 return Stack(
                                   clipBehavior: Clip.none,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.mail, color: Colors.black38),
+                                      icon: Icon(
+                                        Icons.mail, 
+                                        color: isDark ? Colors.white38 : Colors.black38,  // CHANGED
+                                      ),
                                       onPressed: () {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(
-                                            content: Text(
-                                                "Sign in with your account to view invitations"),
+                                            content: Text("Sign in with your account to view invitations"),
                                             duration: Duration(seconds: 2),
                                           ),
                                         );
@@ -765,7 +761,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     clipBehavior: Clip.none,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.mail, color: Colors.black87),
+                                        icon: Icon(
+                                          Icons.mail, 
+                                          color: isDark ? Colors.white : Colors.black87,  // CHANGED
+                                        ),
                                         onPressed: () => _showInvitationsDialog(
                                             context, snapshot.data?.docs ?? []),
                                       ),
@@ -786,7 +785,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(width: 12),
                           IconButton(
-                            icon: const Icon(Icons.settings, color: Colors.black87),
+                            icon: Icon(
+                              Icons.settings, 
+                              color: isDark ? Colors.white : Colors.black87,  // CHANGED
+                            ),
                             onPressed: () {},
                           ),
                         ],
@@ -795,274 +797,294 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-
                 // Main content
                 Expanded(
                   child: Container(
-                    color: const Color.fromARGB(255, 245, 245, 245),
+                    color: Theme.of(context).colorScheme.surface,  // CHANGED
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 12),
-                        // Your teams section
-                        const Text(
-                          "My teams",
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black54),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // New team button or sign in prompt
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _auth.currentUser?.email != null
-                                ? () => _showProjectDialog(context)
-                                : () {
-                                    Navigator.pushNamed(context, '/login');
-                                  },
-                            icon: Icon(_auth.currentUser?.email != null ? Icons.add : Icons.login),
-                            label: Text(_auth.currentUser?.email != null
-                                ? "New Project"
-                                : "Sign in to create projects"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF116DE6),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              minimumSize: const Size(double.infinity, 45),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 12),
+                          Text(  // CHANGED - removed const
+                            "My teams",
+                            style: TextStyle(
+                              fontSize: 14, 
+                              fontWeight: FontWeight.w600, 
+                              color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
+                          const SizedBox(height: 12),
 
-                        // Projects list or welcome message for non-signed in users
-                        if (_auth.currentUser?.email == null)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Welcome to TaskSync!",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF116DE6),
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  "Sign in to create projects and collaborate with your team.",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.black54),
-                                ),
-                              ],
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _auth.currentUser?.email != null
+                                  ? () => _showProjectDialog(context)
+                                  : () {
+                                      Navigator.pushNamed(context, '/login');
+                                    },
+                              icon: Icon(_auth.currentUser?.email != null ? Icons.add : Icons.login),
+                              label: Text(_auth.currentUser?.email != null
+                                  ? "New Project"
+                                  : "Sign in to create projects"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF116DE6),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                minimumSize: const Size(double.infinity, 45),
+                              ),
                             ),
-                          )
-                        else
-                          StreamBuilder<QuerySnapshot>(
-                            stream: _projectsRef
-                                .where("memberIds", arrayContains: _auth.currentUser!.uid)
-                                .orderBy("createdAt", descending: true)
-                                .snapshots(includeMetadataChanges: true),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
-                            }
+                          ),
+                          const SizedBox(height: 8),
 
-                            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 20),
-                                child: Center(
-                                  child: Text(
-                                    "No teams yet. Create one to get started.",
-                                    style: TextStyle(color: Colors.black54),
+                          if (_auth.currentUser?.email == null)
+                            Padding(  // CHANGED - removed const
+                              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(  // CHANGED - removed const
+                                    "Welcome to TaskSync!",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? const Color(0xFF4A9EFF) : const Color(0xFF116DE6),  // CHANGED
+                                    ),
                                   ),
-                                ),
-                              );
-                            }
+                                  const SizedBox(height: 8),
+                                  Text(  // CHANGED - removed const
+                                    "Sign in to create projects and collaborate with your team.",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            StreamBuilder<QuerySnapshot>(
+                              stream: _projectsRef
+                                  .where("memberIds", arrayContains: _auth.currentUser!.uid)
+                                  .orderBy("createdAt", descending: true)
+                                  .snapshots(includeMetadataChanges: true),
+                                  builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return const Center(child: CircularProgressIndicator());
+                                }
 
-                            final projects = snapshot.data!.docs;
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: projects.length,
-                              itemBuilder: (context, index) {
-                                final doc = projects[index];
-                                if (!doc.exists) return const SizedBox.shrink();
-                                
-                                // ✅ Get data directly from the doc instead of nested StreamBuilder
-                                final projectData = doc.data() as Map<String, dynamic>;
-                                final memberCount = (projectData["memberIds"] as List?)?.length ?? 0;
+                                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                  return Padding(  // CHANGED - removed const
+                                    padding: const EdgeInsets.symmetric(vertical: 20),
+                                    child: Center(
+                                      child: Text(  // CHANGED - removed const
+                                        "No teams yet. Create one to get started.",
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
 
-                                return InkWell(
-                                  onTap: () async {
-                                    final memberIds = List<String>.from(projectData['memberIds'] ?? []);
-                                    final tasks = List<Map<String, dynamic>>.from(projectData['tasks'] ?? []);
-                                    final memberNames = await _getMemberNames(memberIds);
+                                final projects = snapshot.data!.docs;
+                                return ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: projects.length,
+                                  itemBuilder: (context, index) {
+                                    final doc = projects[index];
+                                    if (!doc.exists) return const SizedBox.shrink();
                                     
-                                    if (!context.mounted) return;
-                                    
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ProjectScreen(
-                                          projectId: doc.id,
-                                          projectName: projectData["title"] ?? "Untitled",
-                                          members: memberIds,
-                                          tasks: tasks,
-                                          memberNames: memberNames,
-                                          ownerId: projectData['ownerId'] ?? '',
+                                    final projectData = doc.data() as Map<String, dynamic>;
+                                    final memberCount = (projectData["memberIds"] as List?)?.length ?? 0;
+
+                                    return InkWell(
+                                      onTap: () async {
+                                        final memberIds = List<String>.from(projectData['memberIds'] ?? []);
+                                        final tasks = List<Map<String, dynamic>>.from(projectData['tasks'] ?? []);
+                                        final memberNames = await _getMemberNames(memberIds);
+                                        
+                                        if (!context.mounted) return;
+                                        
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ProjectScreen(
+                                              projectId: doc.id,
+                                              projectName: projectData["title"] ?? "Untitled",
+                                              members: memberIds,
+                                              tasks: tasks,
+                                              memberNames: memberNames,
+                                              ownerId: projectData['ownerId'] ?? '',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).cardColor,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Theme.of(context).dividerColor, 
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  projectData["title"] ?? "Untitled",
+                                                  style: TextStyle(  // CHANGED - removed const
+                                                    fontSize: 14, 
+                                                    fontWeight: FontWeight.w600,
+                                                    color: isDark ? Colors.white : Colors.black87,  // ADDED
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  "$memberCount Members",
+                                                  style: TextStyle(  // CHANGED - removed const
+                                                    fontSize: 12, 
+                                                    color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Row(
+                                              children: [
+                                                if (FirebaseAuth.instance.currentUser?.uid == projectData['ownerId']) ...[
+                                                  IconButton(
+                                                    icon: const Icon(Icons.person_add, color: Colors.green, size: 20),
+                                                    onPressed: () => _showInviteDialog(context, doc.id),
+                                                    iconSize: 20,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                                    onPressed: () => _showProjectDialog(
+                                                      context,
+                                                      projectId: doc.id,
+                                                      currentTitle: projectData["title"],
+                                                    ),
+                                                    iconSize: 20,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                                    onPressed: () => _showDeleteProjectDialog(
+                                                        context, doc.id, projectData["title"] ?? "Untitled"),
+                                                    iconSize: 20,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     );
                                   },
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.grey[200]!, width: 1),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              projectData["title"] ?? "Untitled",
-                                              style: const TextStyle(
-                                                  fontSize: 14, fontWeight: FontWeight.w600),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              "$memberCount Members",
-                                              style: const TextStyle(
-                                                  fontSize: 12, color: Colors.black54),
-                                            ),
-                                          ],
-                                        ),
-                                        // Edit/Delete buttons for project owner
-                                        Row(
-                                          children: [
-                                            if (FirebaseAuth.instance.currentUser?.uid == projectData['ownerId']) ...[
-                                              IconButton(
-                                                icon: const Icon(Icons.person_add, color: Colors.green, size: 20),
-                                                onPressed: () => _showInviteDialog(context, doc.id),
-                                                iconSize: 20,
-                                                padding: EdgeInsets.zero,
-                                                constraints: const BoxConstraints(),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              IconButton(
-                                                icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                                                onPressed: () => _showProjectDialog(
-                                                  context,
-                                                  projectId: doc.id,
-                                                  currentTitle: projectData["title"],
-                                                ),
-                                                iconSize: 20,
-                                                padding: EdgeInsets.zero,
-                                                constraints: const BoxConstraints(),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              IconButton(
-                                                icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                                onPressed: () => _showDeleteProjectDialog(
-                                                    context, doc.id, projectData["title"] ?? "Untitled"),
-                                                iconSize: 20,
-                                                padding: EdgeInsets.zero,
-                                                constraints: const BoxConstraints(),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
                                 );
                               },
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 28),
+                            ),
+                          const SizedBox(height: 28),
 
-                        // Welcome section
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[200]!, width: 1),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                      SizedBox(
-                                        width: 28,
-                                        height: 28,
-                                        child: Image.asset(
-                                          'assets/icons/logo.png',
-                                          fit: BoxFit.contain,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return const Icon(
-                                              Icons.task_alt,
-                                              size: 28,
-                                              color: Color(0xFF116DE6),
-                                            );
-                                          },
-                                        ),
+                          // Welcome section
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Theme.of(context).dividerColor, 
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 28,
+                                      height: 28,
+                                      child: Image.asset(
+                                        'assets/icons/logo.png',
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return const Icon(
+                                            Icons.task_alt,
+                                            size: 28,
+                                            color: Color(0xFF116DE6),
+                                          );
+                                        },
                                       ),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    "Welcome to TaskSync",
-                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(  // CHANGED - removed const
+                                      "Welcome to TaskSync",
+                                      style: TextStyle(
+                                        fontSize: 14, 
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? Colors.white : Colors.black87,  // ADDED
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(  // CHANGED - removed const
+                                  "Team collaboration made simple for Android. Create Teams, assign tasks, and stay synchronized.",
+                                  style: TextStyle(
+                                    fontSize: 12, 
+                                    color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                    height: 1.4,
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                "Team collaboration made simple for Android. Create Teams, assign tasks, and stay synchronized.",
-                                
-                                style: TextStyle(fontSize: 12, color: Colors.black54, height: 1.4),
-                              ),
-                            ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        // Feature cards
-                        _buildFeatureCard(
-                          icon: Icons.group,
-                          title: "Create & Manage Team",
-                          description: "Set up teams for different projects and organize your workflow",
-                          backgroundColor: const Color(0xFFE8F5E9),
-                        ),
-                        const SizedBox(height: 12),
+                          // Feature cards
+                          _buildFeatureCard(
+                            icon: Icons.group,
+                            title: "Create & Manage Team",
+                            description: "Set up teams for different projects and organize your workflow",
+                            backgroundColor: const Color.fromARGB(80, 0, 255, 21),
+                          ),
+                          const SizedBox(height: 12),
 
-                        _buildFeatureCard(
-                          icon: Icons.person_add,
-                          title: "Invite Team Members",
-                          description: "Add members using their email addresses and collaborate in real time",
-                          backgroundColor: const Color(0xFFF3E5F5),
-                        ),
-                        const SizedBox(height: 12),
+                          _buildFeatureCard(
+                            icon: Icons.person_add,
+                            title: "Invite Team Members",
+                            description: "Add members using their email addresses and collaborate in real time",
+                            backgroundColor: const Color.fromARGB(80, 240, 143, 255),
+                          ),
+                          const SizedBox(height: 12),
 
-                        _buildFeatureCard(
-                          icon: Icons.update,
-                          title: "Real-time Updates",
-                          description: "See instant notifications when tasks are completed or updated",
-                          backgroundColor: const Color(0xFFFCE4EC),
-                        ),
-                        const SizedBox(height: 30),
-                      ],
-                    ),
+                          _buildFeatureCard(
+                            icon: Icons.update,
+                            title: "Real-time Updates",
+                            description: "See instant notifications when tasks are completed or updated",
+                            backgroundColor: const Color.fromARGB(80, 253, 91, 145),
+                          ),
+                          const SizedBox(height: 30),
+                        ],
+                      ),
                     ),
                   ),
                 ),
