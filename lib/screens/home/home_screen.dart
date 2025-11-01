@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../project/project_screen.dart';
+import '/services/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -73,12 +74,36 @@ class _HomeScreenState extends State<HomeScreen> {
       final normalizedEmail = email.trim().toLowerCase();
       final inviteId = '${projectId}_$normalizedEmail';
       
+      // Get inviter's name
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+      final inviterName = userDoc.data()?['displayName'] ?? 
+                        userDoc.data()?['name'] ?? 
+                        _auth.currentUser?.email ?? 
+                        'Someone';
+      
+      // Get project name
+      final projectDoc = await FirebaseFirestore.instance
+          .collection('projects')
+          .doc(projectId)
+          .get();
+      final projectName = projectDoc.data()?['title'] ?? 'Project';
+      
       await FirebaseFirestore.instance.collection('project_invites').doc(inviteId).set({
         "projectId": projectId,
         "email": normalizedEmail,
         "invitedBy": uid,
         "createdAt": FieldValue.serverTimestamp(),
       });
+      
+      // Send notification
+      await NotificationService().notifyProjectInvitation(
+        inviteeEmail: normalizedEmail,
+        projectName: projectName,
+        inviterName: inviterName,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

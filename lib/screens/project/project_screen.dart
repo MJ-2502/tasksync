@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import '/services/notification_service.dart';//i added import for notification service
 
 class ProjectScreen extends StatefulWidget {
   final String projectId;
@@ -91,36 +92,51 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
     return false;
   }
 
-  Future<void> _addTask({
-    required String title,
-    required String assignee,
-    required DateTime startDate,
-    required DateTime dueDate,
-    required TimeOfDay dueTime,
-    bool highPriority = false,
-  }) async {
-    try {
-      // Combine date and time
-      final dueDateWithTime = DateTime(
-        dueDate.year,
-        dueDate.month,
-        dueDate.day,
-        dueTime.hour,
-        dueTime.minute,
+Future<void> _addTask({
+  required String title,
+  required String assignee,
+  required DateTime startDate,
+  required DateTime dueDate,
+  required TimeOfDay dueTime,
+  bool highPriority = false,
+}) async {
+  try {
+    final dueDateWithTime = DateTime(
+      dueDate.year,
+      dueDate.month,
+      dueDate.day,
+      dueTime.hour,
+      dueTime.minute,
+    );
+
+    final taskRef = await _tasksRef.add({
+      'title': title,
+      'assignee': assignee,
+      'createdBy': FirebaseAuth.instance.currentUser?.uid,
+      'status': 'In progress',
+      'startDate': Timestamp.fromDate(startDate),
+      'dueDate': Timestamp.fromDate(dueDateWithTime),
+      'completed': false,
+      'priority': highPriority,
+      'isNew': true,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+      // Send notification to assignee
+      await NotificationService().notifyTaskAssignment(
+        assigneeId: assignee,
+        taskTitle: title,
+        projectName: widget.projectName,
+        taskId: taskRef.id,
       );
 
-      await _tasksRef.add({
-        'title': title,
-        'assignee': assignee,
-        'createdBy': FirebaseAuth.instance.currentUser?.uid,
-        'status': 'In progress',
-        'startDate': Timestamp.fromDate(startDate),
-        'dueDate': Timestamp.fromDate(dueDateWithTime),
-        'completed': false,
-        'priority': highPriority,
-        'isNew': true,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      // Schedule reminder notification
+      await NotificationService().scheduleTaskReminder(
+        taskId: taskRef.id,
+        taskTitle: title,
+        dueDate: dueDateWithTime,
+        projectName: widget.projectName,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -153,8 +169,20 @@ class _ProjectScreenState extends State<ProjectScreen> with SingleTickerProvider
 
   Future<void> _updateTask(String taskId, Map<String, dynamic> updates) async {
     await _tasksRef.doc(taskId).update(updates);
+    
+    // If task was marked as completed, notify team members
+    if (updates['completed'] == true) {
+      final taskDoc = await _tasksRef.doc(taskId).get();
+      final taskData = taskDoc.data() as Map<String, dynamic>;
+      
+      await NotificationService().notifyTaskCompletion(
+        taskTitle: taskData['title'] ?? 'Task',
+        projectName: widget.projectName,
+        projectId: widget.projectId,
+        memberIds: widget.members,
+      );
+    }
   }
-
   Future<void> _deleteTask(String taskId) async {
     await _tasksRef.doc(taskId).delete();
   }

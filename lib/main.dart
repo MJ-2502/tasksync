@@ -1,30 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
 import 'themes/app_theme.dart';
 import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
-import 'screens/main_navigation.dart'; 
+import 'screens/main_navigation.dart';
+
+// Background message handler
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print('📬 Background message: ${message.notification?.title}');
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Initialize notifications
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await NotificationService().initialize();
+  
+  // Check for overdue tasks on app startup
+  _checkOverdueTasksOnStartup();
+  
   runApp(
     MultiProvider(
       providers: [
-        // Provide AuthService as a regular Provider (not ChangeNotifier)
         Provider(create: (_) => AuthService()),
-        
-        // ThemeProvider as ChangeNotifier
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        
-        // Stream provider for Firebase Auth state
         StreamProvider<User?>(
           create: (_) => FirebaseAuth.instance.authStateChanges(),
           initialData: null,
@@ -33,6 +46,14 @@ void main() async {
       child: const TaskSyncApp(),
     ),
   );
+}
+
+// Check overdue tasks when app starts
+void _checkOverdueTasksOnStartup() {
+  // Wait a bit for Firebase to fully initialize
+  Future.delayed(const Duration(seconds: 2), () {
+    NotificationService().checkAndNotifyOverdueTasks();
+  });
 }
 
 class TaskSyncApp extends StatelessWidget {
@@ -45,12 +66,9 @@ class TaskSyncApp extends StatelessWidget {
         return MaterialApp(
           title: 'TaskSync',
           debugShowCheckedModeBanner: false,
-          
-          // Apply themes
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-          
           home: const AuthWrapper(),
           routes: {
             '/login': (context) => const LoginScreen(),
@@ -70,10 +88,8 @@ class AuthWrapper extends StatelessWidget {
     final user = context.watch<User?>();
 
     if (user != null) {
-      // Logged in → go to MainNavigation (with Home, Calendar, Profile)
       return const MainNavigation();
     } else {
-      // Not logged in → go to Login
       return const LoginScreen();
     }
   }

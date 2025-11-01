@@ -347,63 +347,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Email Verification Status
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,  // CHANGED
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(context).dividerColor,  // CHANGED
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              user?.emailVerified == true 
-                                  ? Icons.verified_user 
-                                  : Icons.info_outline,
-                              color: user?.emailVerified == true 
-                                  ? Colors.green 
-                                  : Colors.orange,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(  // CHANGED - removed const
-                                    "Email Status",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    user?.emailVerified == true 
-                                        ? "Verified" 
-                                        : "Not Verified",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: user?.emailVerified == true 
-                                          ? Colors.green[700] 
-                                          : Colors.orange[700],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-
                       // Appearance Section
                       Text(  // CHANGED - removed const
                         "Appearance",
