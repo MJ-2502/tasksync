@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../main_navigation.dart';
 import 'forgot_password_screen.dart';
+import '../auth/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -283,12 +284,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       "Don't have an account? ",
                       style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.grey[600],  // CHANGED
+                        color: isDark ? Colors.white70 : Colors.grey[600],
                       ),
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, '/signup');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SignupScreen()),
+                        );
                       },
                       child: const Text(
                         'Sign Up',

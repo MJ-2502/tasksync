@@ -12,7 +12,6 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        // ✅ CORRECT SYNTAX FOR KOTLIN DSL
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -33,6 +32,13 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
+
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
@@ -50,6 +56,6 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     
-    // ✅ CORRECT SYNTAX FOR KOTLIN DSL
+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
