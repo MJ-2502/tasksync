@@ -98,12 +98,13 @@ class _HomeScreenState extends State<HomeScreen> {
         "createdAt": FieldValue.serverTimestamp(),
       });
       
-      // Send notification
+      // Send notification(needs cloud function to work properly)
       await NotificationService().notifyProjectInvitation(
         inviteeEmail: normalizedEmail,
         projectName: projectName,
         inviterName: inviterName,
       );
+
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -557,10 +558,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       direction: Axis.vertical,
                                       spacing: 8,
                                       children: [
-                                        ElevatedButton.icon(
+                                        OutlinedButton.icon(
                                           icon: const Icon(Icons.check, size: 18),
                                           label: const Text('Accept'),
-                                          style: ElevatedButton.styleFrom(minimumSize: const Size(88, 36)),
+                                          style: OutlinedButton.styleFrom(minimumSize: const Size(88, 36)),
                                           onPressed: () async {
                                             final user = FirebaseAuth.instance.currentUser;
                                             if (user?.email == null) {
@@ -689,7 +690,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;  // ADD THIS
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Stack(
       children: [
@@ -727,7 +728,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 20, 
                               fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black87,  // ADDED
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                           ),
                         ],
@@ -779,42 +780,48 @@ class _HomeScreenState extends State<HomeScreen> {
                                     .collection('project_invites')
                                     .where('email', isEqualTo: currentEmailForInvites.toLowerCase())
                                     .snapshots(),
-                                builder: (context, snapshot) {
-                                  final hasInvites =
-                                      snapshot.hasData && snapshot.data!.docs.isNotEmpty;
-                                  return Stack(
-                                    clipBehavior: Clip.none,
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.mail, 
-                                          color: isDark ? Colors.white : Colors.black87,  // CHANGED
+                                  
+                                  builder: (context, snapshot) {
+                                    final count = snapshot.data?.docs.length ?? 0;
+                                    
+                                    return Stack(
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(Icons.mail),
+                                          onPressed: () => _showInvitationsDialog(context, snapshot.data?.docs ?? []),
                                         ),
-                                        onPressed: () => _showInvitationsDialog(
-                                            context, snapshot.data?.docs ?? []),
-                                      ),
-                                      if (hasInvites)
-                                        const Positioned(
-                                          right: 6,
-                                          top: 6,
-                                          child: CircleAvatar(
-                                            radius: 5,
-                                            backgroundColor: Colors.red,
+                                        //invitation counter
+                                        if (count > 0)
+                                          Positioned(
+                                            right: 8,
+                                            top: 8,
+                                            child: Container(
+                                              padding: EdgeInsets.all(2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.red,
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              constraints: BoxConstraints(minWidth: 16, minHeight: 16),
+                                              child: Text(
+                                                '$count',
+                                                style: TextStyle(color: Colors.white, fontSize: 10),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                    ],
-                                  );
-                                },
+                                      ],
+                                    );
+                                  },
                               );
                             },
                           ),
                           const SizedBox(width: 12),
-                          IconButton(
-                            icon: Icon(
-                              Icons.settings, 
-                              color: isDark ? Colors.white : Colors.black87,  // CHANGED
-                            ),
-                            onPressed: () {},
+                            IconButton(
+                              icon: Icon(
+                                Icons.more_vert,
+                                color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              onPressed: () {},
                           ),
                         ],
                       ),
@@ -870,20 +877,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(  // CHANGED - removed const
+                                  Text(
                                     "Welcome to TaskSync!",
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: isDark ? const Color(0xFF4A9EFF) : const Color(0xFF116DE6),  // CHANGED
+                                      color: isDark ? const Color(0xFF4A9EFF) : const Color(0xFF116DE6),
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(  // CHANGED - removed const
+                                  Text( 
                                     "Sign in to create projects and collaborate with your team.",
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                      color: isDark ? Colors.white60 : Colors.black54,
                                     ),
                                   ),
                                 ],
@@ -901,10 +908,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 }
 
                                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                                  return Padding(  // CHANGED - removed const
+                                  return Padding( 
                                     padding: const EdgeInsets.symmetric(vertical: 20),
                                     child: Center(
-                                      child: Text(  // CHANGED - removed const
+                                      child: Text(  
                                         "No teams yet. Create one to get started.",
                                         style: TextStyle(
                                           color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
@@ -967,18 +974,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                               children: [
                                                 Text(
                                                   projectData["title"] ?? "Untitled",
-                                                  style: TextStyle(  // CHANGED - removed const
+                                                  style: TextStyle(
                                                     fontSize: 14, 
                                                     fontWeight: FontWeight.w600,
-                                                    color: isDark ? Colors.white : Colors.black87,  // ADDED
+                                                    color: isDark ? Colors.white : Colors.black87,
                                                   ),
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   "$memberCount Members",
-                                                  style: TextStyle(  // CHANGED - removed const
+                                                  style: TextStyle(
                                                     fontSize: 12, 
-                                                    color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                                    color: isDark ? Colors.white60 : Colors.black54,
                                                   ),
                                                 ),
                                               ],
@@ -1060,22 +1067,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Text(  // CHANGED - removed const
+                                    Text( 
                                       "Welcome to TaskSync",
                                       style: TextStyle(
                                         fontSize: 14, 
                                         fontWeight: FontWeight.w600,
-                                        color: isDark ? Colors.white : Colors.black87,  // ADDED
+                                        color: isDark ? Colors.white : Colors.black87, 
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                Text(  // CHANGED - removed const
+                                Text( 
                                   "Team collaboration made simple for Android. Create Teams, assign tasks, and stay synchronized.",
                                   style: TextStyle(
                                     fontSize: 12, 
-                                    color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                    color: isDark ? Colors.white60 : Colors.black54, 
                                     height: 1.4,
                                   ),
                                 ),

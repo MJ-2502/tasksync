@@ -140,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon,
               color: isSelected 
                   ? Colors.white 
-                  : (isDark ? Colors.white70 : Colors.black54),  // CHANGED
+                  : (isDark ? Colors.white70 : Colors.black54), 
               size: 20,
             ),
             const SizedBox(height: 4),
@@ -150,7 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fontSize: 11,
                 color: isSelected 
                     ? Colors.white 
-                    : (isDark ? Colors.white70 : Colors.black54),  // CHANGED
+                    : (isDark ? Colors.white70 : Colors.black54), 
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -163,10 +163,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final isDark = Theme.of(context).brightness == Brightness.dark;  // ADD THIS
+    final isDark = Theme.of(context).brightness == Brightness.dark; 
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,  // CHANGED
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,  
       body: SafeArea(
         child: Column(
           children: [
@@ -194,24 +194,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(  // CHANGED - removed const
+                      Text(  
                         "Profile",
                         style: TextStyle(
                           fontSize: 20, 
                           fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black87,  // ADDED
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                       ),
                     ],
                   ),
                   IconButton(
                     icon: Icon(
-                      Icons.settings, 
-                      color: isDark ? Colors.white70 : Colors.black87,  // CHANGED
-                    ),
-                    onPressed: () {
-                      // Optional: Add settings functionality
-                    },
+                      Icons.more_vert,
+                      color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    onPressed: () {},
                   ),
                 ],
               ),
@@ -220,7 +218,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Main content
             Expanded(
               child: Container(
-                color: Theme.of(context).colorScheme.surface,  // CHANGED
+                color: Theme.of(context).colorScheme.surface,
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
@@ -233,10 +231,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,  // CHANGED
+                          color: Theme.of(context).cardColor,  
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Theme.of(context).dividerColor,  // CHANGED
+                            color: Theme.of(context).dividerColor,
                             width: 1,
                           ),
                         ),
@@ -267,7 +265,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               if (_userName != null && _userName!.isNotEmpty)
                                 Text(
                                   _userName!,
-                                  style: TextStyle(  // CHANGED - removed const
+                                  style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: isDark ? Colors.white : Colors.black87,  // ADDED
@@ -278,9 +276,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 const SizedBox(height: 8),
                               Text(
                                 user?.email ?? "No email",
-                                style: TextStyle(  // CHANGED - removed const
+                                style: TextStyle(
                                   fontSize: 14,
-                                  color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                  color: isDark ? Colors.white60 : Colors.black54,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -291,12 +289,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 16),
 
                       // Account Info Section
-                      Text(  // CHANGED - removed const
+                      Text(
                         "Account Information",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                          color: isDark ? Colors.white60 : Colors.black54,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -306,10 +304,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,  // CHANGED
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Theme.of(context).dividerColor,  // CHANGED
+                            color: Theme.of(context).dividerColor,  
                             width: 1,
                           ),
                         ),
@@ -321,20 +319,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(  // CHANGED - removed const
+                                  Text(
                                     "User ID",
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                      color: isDark ? Colors.white60 : Colors.black54,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     user?.uid ?? 'N/A',
-                                    style: TextStyle(  // CHANGED - removed const
+                                    style: TextStyle(  
                                       fontSize: 11,
-                                      color: isDark ? Colors.white70 : Colors.black87,  // CHANGED
+                                      color: isDark ? Colors.white70 : Colors.black87,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -348,12 +346,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 12),
 
                       // Appearance Section
-                      Text(  // CHANGED - removed const
+                      Text(  
                         "Appearance",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                          color: isDark ? Colors.white60 : Colors.black54,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -385,24 +383,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       size: 24,
                                     ),
                                     const SizedBox(width: 12),
-                                    Expanded(  // CHANGED - removed const
+                                    Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(  // CHANGED - removed const
+                                          Text(
                                             "Theme",
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
-                                              color: isDark ? Colors.white : Colors.black87,  // ADDED
+                                              color: isDark ? Colors.white : Colors.black87,
                                             ),
                                           ),
                                           const SizedBox(height: 4),
-                                          Text(  // CHANGED - removed const
+                                          Text(
                                             "Choose your preferred theme",
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                              color: isDark ? Colors.white60 : Colors.black54,
                                             ),
                                           ),
                                         ],
@@ -452,12 +450,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 28),
 
                       // Actions Section
-                      Text(  // CHANGED - removed const
+                      Text(
                         "Actions",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                          color: isDark ? Colors.white60 : Colors.black54,  
                         ),
                       ),
                       const SizedBox(height: 12),

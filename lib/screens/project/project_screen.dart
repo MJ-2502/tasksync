@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import '/services/notification_service.dart';//i added import for notification service
+import '/services/notification_service.dart';
 
 class ProjectScreen extends StatefulWidget {
   final String projectId;
@@ -122,13 +122,13 @@ Future<void> _addTask({
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-      // Send notification to assignee
-      await NotificationService().notifyTaskAssignment(
-        assigneeId: assignee,
-        taskTitle: title,
-        projectName: widget.projectName,
-        taskId: taskRef.id,
-      );
+      // Send notification to assignee(needs cloud function to work properly)
+      // await NotificationService().notifyTaskAssignment(
+      //   assigneeId: assignee,
+      //   taskTitle: title,
+      //   projectName: widget.projectName,
+      //   taskId: taskRef.id,
+      // );
 
       // Schedule reminder notification
       await NotificationService().scheduleTaskReminder(
@@ -170,18 +170,18 @@ Future<void> _addTask({
   Future<void> _updateTask(String taskId, Map<String, dynamic> updates) async {
     await _tasksRef.doc(taskId).update(updates);
     
-    // If task was marked as completed, notify team members
-    if (updates['completed'] == true) {
-      final taskDoc = await _tasksRef.doc(taskId).get();
-      final taskData = taskDoc.data() as Map<String, dynamic>;
+    // If task was marked as completed, notify team members(needs cloud function to work properly)
+    // if (updates['completed'] == true) {
+    //   final taskDoc = await _tasksRef.doc(taskId).get();
+    //   final taskData = taskDoc.data() as Map<String, dynamic>;
       
-      await NotificationService().notifyTaskCompletion(
-        taskTitle: taskData['title'] ?? 'Task',
-        projectName: widget.projectName,
-        projectId: widget.projectId,
-        memberIds: widget.members,
-      );
-    }
+    //   await NotificationService().notifyTaskCompletion(
+    //     taskTitle: taskData['title'] ?? 'Task',
+    //     projectName: widget.projectName,
+    //     projectId: widget.projectId,
+    //     memberIds: widget.members,
+    //   );
+    // }
   }
   Future<void> _deleteTask(String taskId) async {
     await _tasksRef.doc(taskId).delete();
@@ -233,8 +233,6 @@ Future<void> _addTask({
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.add_task, color: Colors.white),
-                      const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
                           'Create New Task',
@@ -244,10 +242,6 @@ Future<void> _addTask({
                             color: Colors.white,
                           ),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),

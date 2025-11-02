@@ -25,7 +25,7 @@ class AuthService {
 
       return result.user;
     } catch (e) {
-      ("❌ SignUp Error: $e");
+      print("❌ SignUp Error: $e");
       return null;
     }
   }
@@ -40,8 +40,81 @@ class AuthService {
 
       return result.user;
     } catch (e) {
-      ("❌ Login Error: $e");
+      print("❌ Login Error: $e");
       return null;
+    }
+  }
+
+  // --- Send password reset email ---
+  Future<PasswordResetResult> sendPasswordResetEmail(String email) async {
+    try {
+      // Firebase Auth will check if email exists automatically
+      await _auth.sendPasswordResetEmail(email: email.trim());
+
+      return PasswordResetResult(
+        success: true,
+        message: 'Password reset email sent! Check your inbox.',
+      );
+    } on FirebaseAuthException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'invalid-email':
+          message = 'Invalid email address format.';
+          break;
+        case 'user-not-found':
+          message = 'No account found with this email.';
+          break;
+        case 'too-many-requests':
+          message = 'Too many requests. Please try again later.';
+          break;
+        default:
+          message = 'An error occurred. Please try again.';
+      }
+      return PasswordResetResult(success: false, message: message);
+    } catch (e) {
+      print("❌ Password Reset Error: $e");
+      return PasswordResetResult(
+        success: false,
+        message: 'Failed to send reset email. Please try again.',
+      );
+    }
+  }
+
+  // --- Verify password reset code ---
+  Future<bool> verifyPasswordResetCode(String code) async {
+    try {
+      await _auth.verifyPasswordResetCode(code);
+      return true;
+    } catch (e) {
+      print("❌ Verify Reset Code Error: $e");
+      return false;
+    }
+  }
+
+  // --- Confirm password reset with code ---
+  Future<PasswordResetResult> confirmPasswordReset(String code, String newPassword) async {
+    try {
+      await _auth.confirmPasswordReset(code: code, newPassword: newPassword);
+      return PasswordResetResult(
+        success: true,
+        message: 'Password reset successful! You can now log in.',
+      );
+    } on FirebaseAuthException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'expired-action-code':
+          message = 'Reset code has expired. Please request a new one.';
+          break;
+        case 'invalid-action-code':
+          message = 'Invalid reset code. Please try again.';
+          break;
+        case 'weak-password':
+          message = 'Password is too weak. Use at least 6 characters.';
+          break;
+        default:
+          message = 'Failed to reset password. Please try again.';
+      }
+      return PasswordResetResult(success: false, message: message);
     }
   }
 
@@ -52,4 +125,15 @@ class AuthService {
 
   // --- Get current user (real-time stream) ---
   Stream<User?> get userStream => _auth.authStateChanges();
+}
+
+// Result class for password reset operations
+class PasswordResetResult {
+  final bool success;
+  final String message;
+
+  PasswordResetResult({
+    required this.success,
+    required this.message,
+  });
 }
