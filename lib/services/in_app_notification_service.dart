@@ -21,16 +21,9 @@ class InAppNotificationService {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings iosSettings =
-        DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-
     const InitializationSettings settings = InitializationSettings(
       android: androidSettings,
-      iOS: iosSettings,
+
     );
 
     await _localNotifications.initialize(settings);
@@ -146,15 +139,10 @@ class InAppNotificationService {
       showWhen: true,
     );
 
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+
 
     const NotificationDetails details = NotificationDetails(
       android: androidDetails,
-      iOS: iosDetails,
     );
 
     await _localNotifications.show(

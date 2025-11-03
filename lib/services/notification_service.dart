@@ -62,16 +62,9 @@ class NotificationService {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings iosSettings =
-        DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
 
     const InitializationSettings settings = InitializationSettings(
       android: androidSettings,
-      iOS: iosSettings,
     );
 
     await _localNotifications.initialize(
@@ -121,14 +114,14 @@ class NotificationService {
 
   /// Handle notification tap
   void _handleNotificationTap(RemoteMessage message) {
-    print('👆 Notification tapped: ${message.data}');
+    print('Notification tapped: ${message.data}');
     // Navigate to specific screen based on message data
     // You can add navigation logic here
   }
 
   /// Handle local notification tap
   void _onNotificationTapped(NotificationResponse response) {
-    print('👆 Local notification tapped: ${response.payload}');
+    print('Local notification tapped: ${response.payload}');
     // Add navigation logic here
   }
 
@@ -148,15 +141,9 @@ class NotificationService {
       showWhen: true,
     );
 
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
     const NotificationDetails details = NotificationDetails(
       android: androidDetails,
-      iOS: iosDetails,
+
     );
 
     await _localNotifications.show(
@@ -191,15 +178,8 @@ class NotificationService {
         priority: Priority.high,
       );
 
-      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
       const NotificationDetails details = NotificationDetails(
         android: androidDetails,
-        iOS: iosDetails,
       );
 
       await _localNotifications.zonedSchedule(
