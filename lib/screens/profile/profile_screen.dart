@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../providers/theme_provider.dart';  // ADD THIS
-import 'auth/login_screen.dart';
+import '../../../services/auth_service.dart';
+import '../../../providers/theme_provider.dart';
+import '../auth/login_screen.dart';
+import '../about_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -99,7 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: Color(0xFF116DE6),
               foregroundColor: Colors.white,
             ),
             child: const Text('Logout'),
@@ -204,12 +205,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
-                  IconButton(
+                  PopupMenuButton<String>(
+                    offset: const Offset(0, 50),
                     icon: Icon(
-                      Icons.more_vert,
+                      Icons.menu,
                       color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    onSelected: (value) {
+                      if (value == 'about') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AboutScreen(),
+                          ),
+                        );
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'about',
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 20),
+                            SizedBox(width: 12),
+                            Text('About TaskSync'),
+                          ],
+                        ),
                       ),
-                    onPressed: () {},
+                    ],
                   ),
                 ],
               ),

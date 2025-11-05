@@ -617,9 +617,10 @@ Future<void> _addTask({
                       ],
                     ),
                   ),
+                  
                   IconButton(
                     icon: Icon(
-                      Icons.more_vert,
+                      Icons.help,
                       color: isDark ? Colors.white : Colors.black87,
                       ),
                     onPressed: () {},

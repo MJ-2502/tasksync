@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../about_screen.dart';
+
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -193,35 +195,68 @@ class _CalendarScreenState extends State<CalendarScreen> {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  SizedBox(
-                    width: 35,
-                    height: 35,
-                    child: Image.asset(
-                      'assets/icons/calendar.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.task_alt,
-                          size: 28,
-                          color: Color(0xFF116DE6),
-                        );
-                      },
-                    ),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 35,
+                        height: 35,
+                        child: Image.asset(
+                          'assets/icons/calendar.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.task_alt,
+                              size: 28,
+                              color: Color(0xFF116DE6),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Calendar",
+                        style: TextStyle(
+                          fontSize: 20, 
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(  // CHANGED - removed const
-                    "Calendar",
-                    style: TextStyle(
-                      fontSize: 20, 
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,  // ADDED
+                  PopupMenuButton<String>(
+                    offset: const Offset(0, 50),
+                    icon: Icon(
+                      Icons.menu,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
+                    onSelected: (value) {
+                      if (value == 'about') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AboutScreen(),
+                          ),
+                        );
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'about',
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 20),
+                            SizedBox(width: 12),
+                            Text('About TaskSync'),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-
             // Main content
             Expanded(
               child: Container(
@@ -450,7 +485,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 
-                                // Task completion stats (colors kept as-is since they're accent colors)
+                                // Task completion stats
                                 Row(
                                   children: [
                                     Expanded(
@@ -570,10 +605,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,  // CHANGED
+                                color: Theme.of(context).cardColor,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: Theme.of(context).dividerColor,  // CHANGED
+                                  color: Theme.of(context).dividerColor,
                                   width: 1,
                                 ),
                               ),
@@ -585,7 +620,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: isDark ? Colors.white : Colors.black87,  // ADDED
+                                      color: isDark ? Colors.white : Colors.black87, 
                                     ),
                                   ),
                                   const SizedBox(height: 12),
@@ -635,30 +670,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                                         ? TextDecoration.lineThrough
                                                         : null,
                                                     color: isCompleted
-                                                        ? (isDark ? Colors.white38 : Colors.black54)  // CHANGED
-                                                        : (isDark ? Colors.white : Colors.black87),  // CHANGED
+                                                        ? (isDark ? Colors.white38 : Colors.black54)
+                                                        : (isDark ? Colors.white : Colors.black87), 
                                                   ),
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   task['projectName'] ?? 'Unknown Project',
-                                                  style: TextStyle(  // CHANGED - removed const
+                                                  style: TextStyle( 
                                                     fontSize: 11,
-                                                    color: isDark ? Colors.white54 : Colors.black54,  // CHANGED
+                                                    color: isDark ? Colors.white54 : Colors.black54,
                                                   ),
                                                 ),
                                                 const SizedBox(height: 2),
                                                 Row(
                                                   children: [
-                                                    Icon(  // CHANGED - removed const
+                                                    Icon(
                                                       Icons.access_time,
                                                       size: 12,
-                                                      color: isDark ? Colors.white38 : Colors.black38,  // CHANGED
+                                                      color: isDark ? Colors.white38 : Colors.black38, 
                                                     ),
                                                     const SizedBox(width: 4),
                                                     Text(
                                                       timeStr,
-                                                      style: TextStyle(  // CHANGED - removed const
+                                                      style: TextStyle(  
                                                         fontSize: 11,
                                                         color: isDark ? Colors.white38 : Colors.black38,  // CHANGED
                                                       ),
@@ -710,19 +745,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,  // CHANGED
+                                color: Theme.of(context).cardColor, 
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: Theme.of(context).dividerColor,  // CHANGED
+                                  color: Theme.of(context).dividerColor,
                                   width: 1,
                                 ),
                               ),
-                              child: Center(  // CHANGED - removed const
+                              child: Center(
                                 child: Text(
                                   'No tasks scheduled for this day',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: isDark ? Colors.white60 : Colors.black54,  // CHANGED
+                                    color: isDark ? Colors.white60 : Colors.black54,  
                                   ),
                                 ),
                               ),

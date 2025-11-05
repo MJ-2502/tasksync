@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
 import '../main_navigation.dart';
 
@@ -191,7 +192,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,  // CHANGED
+                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -230,7 +231,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,  // CHANGED
+                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -272,7 +273,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,  // CHANGED
+                                color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -419,11 +420,37 @@ class _SignupScreenState extends State<SignupScreen> {
           _errorMessage = "Failed to sign up. Please try again later.";
         });
       }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        // Handle specific Firebase Auth errors
+        switch (e.code) {
+          case 'email-already-in-use':
+            _errorMessage = 
+                "This email is already registered. Please log in instead or use a different email.";
+            break;
+          case 'invalid-email':
+            _errorMessage = "The email address is not valid.";
+            break;
+          case 'operation-not-allowed':
+            _errorMessage = "Email/password accounts are not enabled.";
+            break;
+          case 'weak-password':
+            _errorMessage = "The password is too weak. Please use a stronger password.";
+            break;
+          case 'network-request-failed':
+            _errorMessage = "Network error. Please check your connection and try again.";
+            break;
+          default:
+            _errorMessage = "Failed to sign up: ${e.message ?? 'Unknown error'}";
+        }
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = "An error occurred. Please try again later.";
+        _errorMessage = "An unexpected error occurred. Please try again later.";
       });
     }
   }
