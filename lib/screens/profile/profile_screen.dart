@@ -6,6 +6,7 @@ import '../../../services/auth_service.dart';
 import '../../../providers/theme_provider.dart';
 import '../auth/login_screen.dart';
 import '../about_screen.dart';
+import '../../theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -129,11 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? const Color(0xFF116DE6)
               : Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF116DE6)
-                : Theme.of(context).dividerColor,
-          ),
+          boxShadow: isSelected ? null : AppTheme.getShadow(context),
         ),
         child: Column(
           children: [
@@ -256,10 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         decoration: BoxDecoration(
                           color: Theme.of(context).cardColor,  
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(context).dividerColor,
-                            width: 1,
-                          ),
+                          boxShadow: AppTheme.getShadow(context),
                         ),
                         child: Column(
                           children: [
@@ -329,10 +323,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         decoration: BoxDecoration(
                           color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(context).dividerColor,  
-                            width: 1,
-                          ),
+                          boxShadow: AppTheme.getShadow(context),
                         ),
                         child: Row(
                           children: [
@@ -388,10 +379,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               color: Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Theme.of(context).dividerColor,
-                                width: 1,
-                              ),
+                              boxShadow: AppTheme.getShadow(context),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

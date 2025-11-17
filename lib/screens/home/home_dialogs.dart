@@ -1,7 +1,6 @@
 part of 'home_screen.dart';
 
 extension _HomeDialogsExtension on _HomeScreenState {
-  // Add underscore prefix to match the calls in home_screen.dart
   void _showProjectDialog(BuildContext context, {String? projectId, String? currentTitle}) {
     final controller = TextEditingController(text: currentTitle ?? "");
     showDialog(

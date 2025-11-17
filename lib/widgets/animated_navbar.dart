@@ -23,7 +23,7 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
     final isDark = Theme.of(context).brightness == Brightness.dark;  
 
     return Container(
-      height: 90,
+      height: 75,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,  // CHANGED - theme-aware
         borderRadius: BorderRadius.circular(15),
@@ -76,14 +76,22 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected
-                  ? const Color(0xFF116DE6)  // Keep primary blue when selected
-                  : (isDark ? Colors.grey[400] : Colors.grey),  // CHANGED - lighter grey for dark mode
+          AnimatedOpacity(
+            duration: _duration,
+            curve: _curve,
+            opacity: isSelected ? 1.0 : 0.0,
+            child: AnimatedContainer(
+              duration: _duration,
+              curve: _curve,
+              height: isSelected ? 15 : 0,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF116DE6),  // Always primary blue when visible
+                ),
+              ),
             ),
           ),
         ],

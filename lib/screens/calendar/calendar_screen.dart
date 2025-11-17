@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../about_screen.dart';
+import '../../theme/app_theme.dart';
 
 
 class CalendarScreen extends StatefulWidget {
@@ -276,10 +277,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             decoration: BoxDecoration(
                               color: Theme.of(context).cardColor,  // CHANGED
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Theme.of(context).dividerColor,  // CHANGED
-                                width: 1,
-                              ),
+                              boxShadow: AppTheme.getShadow(context),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -322,10 +320,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             decoration: BoxDecoration(
                               color: Theme.of(context).cardColor,  // CHANGED
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Theme.of(context).dividerColor,  // CHANGED
-                                width: 1,
-                              ),
+                              boxShadow: AppTheme.getShadow(context),
                             ),
                             child: Column(
                               children: [
@@ -457,10 +452,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             decoration: BoxDecoration(
                               color: Theme.of(context).cardColor,  // CHANGED
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Theme.of(context).dividerColor,  // CHANGED
-                                width: 1,
-                              ),
+                              boxShadow: AppTheme.getShadow(context),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,10 +599,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               decoration: BoxDecoration(
                                 color: Theme.of(context).cardColor,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Theme.of(context).dividerColor,
-                                  width: 1,
-                                ),
+                                boxShadow: AppTheme.getShadow(context),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -747,10 +736,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               decoration: BoxDecoration(
                                 color: Theme.of(context).cardColor, 
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Theme.of(context).dividerColor,
-                                  width: 1,
-                                ),
+                                boxShadow: AppTheme.getShadow(context),
                               ),
                               child: Center(
                                 child: Text(

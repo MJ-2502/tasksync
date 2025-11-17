@@ -6,6 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../project/project_screen.dart';
 import '/services/notification_service.dart';
 import '../about_screen.dart';
+import '../../theme/app_theme.dart';
 
 part 'home_dialogs.dart';
 
@@ -368,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           const SizedBox(height: 12),
                           Text(  // CHANGED - removed const
-                            "My teams",
+                            "Projects",
                             style: TextStyle(
                               fontSize: 14, 
                               fontWeight: FontWeight.w600, 
@@ -394,6 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 minimumSize: const Size(double.infinity, 45),
+                                elevation: 5,
                               ),
                             ),
                           ),
@@ -489,10 +491,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         decoration: BoxDecoration(
                                           color: Theme.of(context).cardColor,
                                           borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: Theme.of(context).dividerColor, 
-                                            width: 1,
-                                          ),
+                                          boxShadow: AppTheme.getShadow(context),
                                         ),
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -569,10 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               color: Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Theme.of(context).dividerColor, 
-                                width: 1,
-                              ),
+                              
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -672,6 +668,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: AppTheme.getShadow(context),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

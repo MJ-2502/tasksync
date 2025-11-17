@@ -5,14 +5,50 @@ class AppTheme {
   static const Color primaryColor = Color(0xFF116DE6);
   
   // Light theme colors
-  static const Color lightBackground = Color(0xFFFFFFFF);
+  static const Color lightBackground = Color.fromARGB(255, 255, 255, 255);
   static const Color lightCardBackground = Color(0xFFFFFFFF);
-  static const Color lightSurface = Color(0xFFF5F5F5);
+  static const Color lightSurface = Color(0xFFF8F8F8);
   
   // Dark theme colors
-  static const Color darkBackground = Color(0xFF121212);
+  static const Color darkBackground = Color(0xFF1E1E1E);
   static const Color darkCardBackground = Color(0xFF1E1E1E);
-  static const Color darkSurface = Color(0xFF2C2C2C);
+  static const Color darkSurface = Color(0xFF1A1A1A);
+  
+  // Shadow styles
+  static List<BoxShadow> get lightShadow => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.08),
+      blurRadius: 8,
+      offset: const Offset(0, 2),
+      spreadRadius: 0,
+    ),
+    BoxShadow(
+      color: Colors.black.withOpacity(0.04),
+      blurRadius: 3,
+      offset: const Offset(0, 1),
+      spreadRadius: 0,
+    ),
+  ];
+  
+  static List<BoxShadow> get darkShadow => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.3),
+      blurRadius: 8,
+      offset: const Offset(0, 2),
+      spreadRadius: 0,
+    ),
+    BoxShadow(
+      color: Colors.black.withOpacity(0.15),
+      blurRadius: 3,
+      offset: const Offset(0, 1),
+      spreadRadius: 0,
+    ),
+  ];
+
+  // Helper method to get appropriate shadow based on brightness
+  static List<BoxShadow> getShadow(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? darkShadow : lightShadow;
+  }
   
   // Light Theme
   static ThemeData lightTheme = ThemeData(
@@ -24,23 +60,25 @@ class AppTheme {
     colorScheme: const ColorScheme.light(
       primary: primaryColor,
       secondary: primaryColor,
-      surface: lightSurface,
+      surface: lightCardBackground,
       error: Colors.red,
     ),
     
     appBarTheme: const AppBarTheme(
       backgroundColor: lightBackground,
+      surfaceTintColor: Colors.transparent,
       foregroundColor: Colors.black87,
       elevation: 0,
+      scrolledUnderElevation: 0,
       iconTheme: IconThemeData(color: Colors.black87),
     ),
     
     cardTheme: CardThemeData(
       color: lightCardBackground,
       elevation: 0,
+      shadowColor: Colors.black.withOpacity(0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!, width: 1),
       ),
     ),
     
@@ -62,14 +100,14 @@ class AppTheme {
     
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.grey[50],
+      fillColor: lightCardBackground,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -99,24 +137,26 @@ class AppTheme {
     colorScheme: const ColorScheme.dark(
       primary: primaryColor,
       secondary: primaryColor,
-      surface: darkSurface,
+      surface: darkCardBackground,
       error: Colors.red,
       onSurface: Colors.white,
     ),
     
     appBarTheme: const AppBarTheme(
       backgroundColor: darkBackground,
+      surfaceTintColor: Colors.transparent,
       foregroundColor: Colors.white,
       elevation: 0,
+      scrolledUnderElevation: 0,
       iconTheme: IconThemeData(color: Colors.white),
     ),
     
     cardTheme: CardThemeData(
       color: darkCardBackground,
       elevation: 0,
+      shadowColor: Colors.black.withOpacity(0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[800]!, width: 1),
       ),
     ),
     
@@ -138,14 +178,14 @@ class AppTheme {
     
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: darkSurface,
+      fillColor: darkCardBackground,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[700]!),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[700]!),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

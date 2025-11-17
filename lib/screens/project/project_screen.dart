@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '/services/notification_service.dart';
+import '../../theme/app_theme.dart';
 
 class ProjectScreen extends StatefulWidget {
   final String projectId;
@@ -901,22 +902,16 @@ Future<void> _addTask({
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: AppTheme.getShadow(context),
             border: Border.all(
               color: isNew
                   ? const Color(0xFF116DE6)
                   : completed
-                      ? Colors.green.withOpacity(0.3)
+                      ? Colors.green.withOpacity(0.6)
                       : isOverdue
-                          ? Colors.red.withOpacity(0.3)
-                          : Theme.of(context).dividerColor, 
-              width: isNew ? 2 : 1,
+                          ? Colors.red.withOpacity(0.6)
+                          : Colors.orange.withOpacity(0.6), // All pending tasks get orange
+              width: isNew ? 2 : 1.5,
             ),
           ),
           child: Stack(
