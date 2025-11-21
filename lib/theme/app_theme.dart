@@ -5,14 +5,14 @@ class AppTheme {
   static const Color primaryColor = Color(0xFF116DE6);
   
   // Light theme colors
-  static const Color lightBackground = Color.fromARGB(255, 255, 255, 255);
-  static const Color lightCardBackground = Color(0xFFFFFFFF);
-  static const Color lightSurface = Color(0xFFF8F8F8);
+  static const Color lightBackground = Color(0xFFF5F5F5);
+  static const Color lightCardBackground = Color(0xFFF5F5F5);
+  static const Color lightSurface = Color(0xFFFFFFFF);
   
   // Dark theme colors
-  static const Color darkBackground = Color(0xFF1E1E1E);
-  static const Color darkCardBackground = Color(0xFF1E1E1E);
-  static const Color darkSurface = Color(0xFF1A1A1A);
+  static const Color darkBackground = Color(0xFF121212);
+  static const Color darkCardBackground = Color(0xFF121212);
+  static const Color darkSurface = Color(0xFF1E1E1E);
   
   // Shadow styles
   static List<BoxShadow> get lightShadow => [

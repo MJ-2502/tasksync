@@ -266,6 +266,14 @@ Future<void> _addTask({
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[400]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF116DE6), width: 2),
+                              ),
                               prefixIcon: const Icon(Icons.description_outlined),
                             ),
                           ),
@@ -278,6 +286,14 @@ Future<void> _addTask({
                               labelText: "Assign To",
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[400]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF116DE6), width: 2),
                               ),
                               prefixIcon: const Icon(Icons.person_outline),
                             ),
@@ -321,6 +337,10 @@ Future<void> _addTask({
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey[400]!),
+                                ),
                                 prefixIcon: const Icon(Icons.calendar_today),
                               ),
                               child: Row(
@@ -363,6 +383,10 @@ Future<void> _addTask({
                                 labelText: "Due Time",
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey[400]!),
                                 ),
                                 prefixIcon: const Icon(Icons.access_time),
                               ),
@@ -472,6 +496,323 @@ Future<void> _addTask({
     );
   }
 
+  void _showEditTaskDialog(String taskId, Map<String, dynamic> taskData) async {
+    final descriptionController = TextEditingController(text: taskData['title'] ?? '');
+    String? selectedAssignee = taskData['assignee'];
+    
+    DateTime pickedDue = (taskData['dueDate'] as Timestamp?)?.toDate() ?? 
+                         DateTime.now().add(const Duration(days: 1));
+    TimeOfDay pickedTime = TimeOfDay(
+      hour: pickedDue.hour,
+      minute: pickedDue.minute,
+    );
+    bool highPriority = taskData['priority'] == true;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            constraints: const BoxConstraints(maxHeight: 600),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF116DE6),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Edit Task',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: StatefulBuilder(
+                      builder: (context, setState) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Task description
+                          TextField(
+                            controller: descriptionController,
+                            maxLines: 3,
+                            decoration: InputDecoration(
+                              labelText: "Task Description",
+                              hintText: "What needs to be done?",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[400]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF116DE6), width: 2),
+                              ),
+                              prefixIcon: const Icon(Icons.description_outlined),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Assignee dropdown
+                          DropdownButtonFormField<String>(
+                            value: selectedAssignee,
+                            decoration: InputDecoration(
+                              labelText: "Assign To",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[400]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF116DE6), width: 2),
+                              ),
+                              prefixIcon: const Icon(Icons.person_outline),
+                            ),
+                            items: widget.members.map((uid) {
+                              final displayName = widget.memberNames[uid] ?? 'Unknown User';
+                              return DropdownMenuItem(
+                                value: uid,
+                                child: Text(displayName),
+                              );
+                            }).toList(),
+                            onChanged: (v) => setState(() => selectedAssignee = v),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Due date picker
+                          InkWell(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: pickedDue,
+                                firstDate: DateTime.now(),
+                                lastDate: DateTime(2100),
+                                builder: (context, child) {
+                                  return Theme(
+                                    data: Theme.of(context).copyWith(
+                                      colorScheme: const ColorScheme.light(
+                                        primary: Color(0xFF116DE6),
+                                      ),
+                                    ),
+                                    child: child!,
+                                  );
+                                },
+                              );
+                              if (picked != null) {
+                                setState(() => pickedDue = picked);
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: "Due Date",
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey[400]!),
+                                ),
+                                prefixIcon: const Icon(Icons.calendar_today),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    DateFormat('MMM dd, yyyy').format(pickedDue),
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  const Icon(Icons.arrow_drop_down),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Due time picker
+                          InkWell(
+                            onTap: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: pickedTime,
+                                builder: (context, child) {
+                                  return Theme(
+                                    data: Theme.of(context).copyWith(
+                                      colorScheme: const ColorScheme.light(
+                                        primary: Color(0xFF116DE6),
+                                      ),
+                                    ),
+                                    child: child!,
+                                  );
+                                },
+                              );
+                              if (picked != null) {
+                                setState(() => pickedTime = picked);
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: "Due Time",
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey[400]!),
+                                ),
+                                prefixIcon: const Icon(Icons.access_time),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    pickedTime.format(context),
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  const Icon(Icons.arrow_drop_down),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Priority toggle
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: CheckboxListTile(
+                              title: const Text('High Priority'),
+                              subtitle: const Text('Mark this task as urgent'),
+                              secondary: Icon(
+                                Icons.flag,
+                                color: highPriority ? Colors.red : Colors.grey,
+                              ),
+                              value: highPriority,
+                              onChanged: (v) => setState(() => highPriority = v ?? false),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Actions
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (descriptionController.text.trim().isNotEmpty) {
+                              final dueDateWithTime = DateTime(
+                                pickedDue.year,
+                                pickedDue.month,
+                                pickedDue.day,
+                                pickedTime.hour,
+                                pickedTime.minute,
+                              );
+
+                              await _updateTask(taskId, {
+                                'title': descriptionController.text.trim(),
+                                'assignee': selectedAssignee ?? widget.members.first,
+                                'dueDate': Timestamp.fromDate(dueDateWithTime),
+                                'priority': highPriority,
+                              });
+
+                              if (!context.mounted) return;
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      Icon(Icons.check_circle, color: Theme.of(context).cardColor, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Task updated successfully'),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please enter a task description'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF116DE6),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Update Task',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showDeleteTaskDialog(BuildContext context, String taskId, String taskTitle) {
     showDialog(
       context: context,
@@ -479,7 +820,6 @@ Future<void> _addTask({
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red[700], size: 28),
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
@@ -494,8 +834,8 @@ Future<void> _addTask({
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Are you sure you want to delete "$taskTitle"?',
-              style: const TextStyle(fontSize: 16),
+              'Are you sure you want to delete this task?',
+              style: const TextStyle(fontSize: 16,),
             ),
             const SizedBox(height: 12),
             Container(
@@ -791,6 +1131,7 @@ Future<void> _addTask({
                               final due = task['dueDate'];
                               final isOverdue = _isOverdue(due, completed);
                               final priority = task['priority'] == true;
+                              final createdBy = task['createdBy'] as String?;
 
                               final isNewGlobal = task['isNew'] == true;
                               final isNewForUser = isNewGlobal && !_seenTaskIds.contains(id);
@@ -804,6 +1145,7 @@ Future<void> _addTask({
                                 isOverdue: isOverdue,
                                 priority: priority,
                                 isNew: isNewForUser,
+                                createdBy: createdBy,
                               );
                             },
                           ),
@@ -870,20 +1212,43 @@ Future<void> _addTask({
     required bool isOverdue,
     required bool priority,
     required bool isNew,
+    required String? createdBy,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
     final isOwner = currentUid == widget.ownerId;
+    final isCreator = currentUid == createdBy;
     final canToggle = isOwner || _isAssignedToCurrentUser(assignee);
+    final canEdit = isOwner || isCreator;
 
     return Dismissible(
       key: Key(id),
-      direction: DismissDirection.endToStart,
+      direction: canEdit ? DismissDirection.horizontal : DismissDirection.endToStart,
       confirmDismiss: (direction) async {
-        _showDeleteTaskDialog(context, id, title);
+        if (direction == DismissDirection.endToStart) {
+          _showDeleteTaskDialog(context, id, title);
+        } else if (direction == DismissDirection.startToEnd && canEdit) {
+          // Get full task data for editing
+          final taskDoc = await _tasksRef.doc(id).get();
+          if (taskDoc.exists) {
+            final taskData = taskDoc.data() as Map<String, dynamic>;
+            if (!context.mounted) return false;
+            _showEditTaskDialog(id, taskData);
+          }
+        }
         return false;
       },
       background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: canEdit ? const Color(0xFF116DE6) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.centerLeft,
+        child: canEdit ? const Icon(Icons.edit, color: Colors.white) : null,
+      ),
+      secondaryBackground: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
@@ -900,7 +1265,7 @@ Future<void> _addTask({
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),
             borderRadius: BorderRadius.circular(12),
             boxShadow: AppTheme.getShadow(context),
             border: Border.all(

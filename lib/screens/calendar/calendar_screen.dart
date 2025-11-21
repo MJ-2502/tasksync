@@ -275,7 +275,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,  // CHANGED
+                              color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: AppTheme.getShadow(context),
                             ),
@@ -318,7 +318,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,  // CHANGED
+                              color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: AppTheme.getShadow(context),
                             ),
@@ -450,7 +450,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,  // CHANGED
+                              color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: AppTheme.getShadow(context),
                             ),
@@ -597,7 +597,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,
+                                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: AppTheme.getShadow(context),
                               ),
@@ -734,7 +734,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor, 
+                                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA), 
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: AppTheme.getShadow(context),
                               ),

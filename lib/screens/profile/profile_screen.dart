@@ -65,9 +65,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showLogoutDialog(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final displayName = _userName ?? user?.email ?? 'User';
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -77,7 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             const SizedBox(height: 24),
             Text(
-              'Are you sure you want to logout "$displayName"?',
+              'Are you sure you want to logout?',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
@@ -251,7 +248,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,  
+                          color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),  
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: AppTheme.getShadow(context),
                         ),
@@ -321,7 +318,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
+                          color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: AppTheme.getShadow(context),
                         ),
@@ -377,7 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
+                              color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: AppTheme.getShadow(context),
                             ),
