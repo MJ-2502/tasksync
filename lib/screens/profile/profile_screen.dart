@@ -569,7 +569,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ? () => _pickTime(context, isStart: true)
                                         : null,
                                     icon: const Icon(Icons.access_time),
-                                    label: Text('Start: ' + MaterialLocalizations.of(context).formatTimeOfDay(_quietStart)),
+                                    label: Text('Start: ${MaterialLocalizations.of(context).formatTimeOfDay(_quietStart)}'),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -579,7 +579,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ? () => _pickTime(context, isStart: false)
                                         : null,
                                     icon: const Icon(Icons.access_time_outlined),
-                                    label: Text('End: ' + MaterialLocalizations.of(context).formatTimeOfDay(_quietEnd)),
+                                    label: Text('End: ${MaterialLocalizations.of(context).formatTimeOfDay(_quietEnd)}'),
                                   ),
                                 ),
                               ],

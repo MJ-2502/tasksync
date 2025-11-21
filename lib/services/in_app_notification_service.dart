@@ -14,9 +14,12 @@ class InAppNotificationService {
       FlutterLocalNotificationsPlugin();
   
   StreamSubscription<QuerySnapshot>? _inviteSub;
-  StreamSubscription<QuerySnapshot>? _taskSub;
+  StreamSubscription<QuerySnapshot>? _projectSub;
+  final List<StreamSubscription<QuerySnapshot>> _taskSubs = [];
+  StreamSubscription<User?>? _authSub;
   final Set<String> _seenInvites = {};
   final Set<String> _seenTasks = {};
+  bool _initialized = false;
 
   /// Initialize and start listening for changes
   Future<void> initialize() async {
@@ -29,20 +32,25 @@ class InAppNotificationService {
     );
 
     await _localNotifications.initialize(settings);
-    
-    // Start listening
-    _listenToInvitations();
-    _listenToNewTasks();
+
+    if (_initialized) return;
+    _initialized = true;
+
+    _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
+      _cancelListeners();
+      if (user == null) return;
+      _listenToInvitations(user);
+      _listenToNewTasks(user);
+    });
   }
 
   /// Listen for project invitations
-  void _listenToInvitations() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user?.email == null) return;
+  void _listenToInvitations(User user) {
+    if (user.email == null) return;
 
     _inviteSub = FirebaseFirestore.instance
         .collection('project_invites')
-        .where('email', isEqualTo: user!.email!.toLowerCase())
+        .where('email', isEqualTo: user.email!.toLowerCase())
         .snapshots()
         .listen((snapshot) {
       for (var change in snapshot.docChanges) {
@@ -77,12 +85,8 @@ class InAppNotificationService {
   }
 
   /// Listen for new tasks assigned to user
-  void _listenToNewTasks() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    // Get all projects where user is a member
-    FirebaseFirestore.instance
+  void _listenToNewTasks(User user) {
+    _projectSub = FirebaseFirestore.instance
         .collection('projects')
         .where('memberIds', arrayContains: user.uid)
         .snapshots()
@@ -91,8 +95,7 @@ class InAppNotificationService {
         final projectId = projectDoc.id;
         final projectName = projectDoc.data()['title'] ?? 'Project';
 
-        // Listen to tasks in this project assigned to current user
-        FirebaseFirestore.instance
+        final sub = FirebaseFirestore.instance
             .collection('projects')
             .doc(projectId)
             .collection('tasks')
@@ -103,8 +106,7 @@ class InAppNotificationService {
           for (var change in taskSnapshot.docChanges) {
             if (change.type == DocumentChangeType.added) {
               final taskId = change.doc.id;
-              
-              // Skip if we've already seen this task
+
               if (_seenTasks.contains(taskId)) continue;
               _seenTasks.add(taskId);
 
@@ -112,7 +114,6 @@ class InAppNotificationService {
               final taskTitle = taskData['title'] ?? 'New Task';
               final createdBy = taskData['createdBy'];
 
-              // Don't notify if you created the task yourself
               if (createdBy == user.uid) continue;
 
               _showLocalNotification(
@@ -122,6 +123,8 @@ class InAppNotificationService {
             }
           }
         });
+
+        _taskSubs.add(sub);
       }
     });
   }
@@ -160,7 +163,19 @@ class InAppNotificationService {
 
   /// Clean up
   void dispose() {
+    _cancelListeners();
+    _authSub?.cancel();
+    _initialized = false;
+  }
+
+  void _cancelListeners() {
     _inviteSub?.cancel();
-    _taskSub?.cancel();
+    _inviteSub = null;
+    _projectSub?.cancel();
+    _projectSub = null;
+    for (final sub in _taskSubs) {
+      sub.cancel();
+    }
+    _taskSubs.clear();
   }
 }

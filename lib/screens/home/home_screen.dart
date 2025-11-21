@@ -34,7 +34,10 @@ class _HomeScreenState extends State<HomeScreen> {
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(memberId).get();
       if (userDoc.exists) {
         final userData = userDoc.data();
-        memberNames[memberId] = userData?['name'] ?? userData?['email'] ?? 'Unknown User';
+        memberNames[memberId] = userData?['displayName'] ??
+            userData?['name'] ??
+            userData?['email'] ??
+            'Unknown User';
       }
     }
     

@@ -1,4 +1,7 @@
 
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import '../services/app_initializer.dart';
 import 'auth/login_screen.dart';
@@ -18,6 +21,9 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnim;
   late Animation<double> _scaleAnim;
+  bool _showOfflineBanner = false;
+  StreamSubscription<ConnectivityResult>? _connectivitySub;
+  Timer? _offlineBannerTimer;
 
   @override
   void initState() {
@@ -35,11 +41,14 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
     _initFuture = AppInitializer.initialize();
+    _setupOfflineBannerWatcher();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _offlineBannerTimer?.cancel();
+    _connectivitySub?.cancel();
     super.dispose();
   }
 
@@ -104,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Widget _wrapWithOfflineBanner(Widget child) {
-    if (!AppInitializer.offlineMode) return child;
+    if (!AppInitializer.offlineMode || !_showOfflineBanner) return child;
 
     return Stack(
       children: [
@@ -139,5 +148,26 @@ class _SplashScreenState extends State<SplashScreen>
         ),
       ],
     );
+  }
+
+  void _setupOfflineBannerWatcher() {
+    if (!AppInitializer.offlineMode) return;
+
+    setState(() => _showOfflineBanner = true);
+
+    _offlineBannerTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() => _showOfflineBanner = false);
+      }
+    });
+
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((status) {
+      if (status != ConnectivityResult.none) {
+        _offlineBannerTimer?.cancel();
+        if (mounted) {
+          setState(() => _showOfflineBanner = false);
+        }
+      }
+    });
   }
 }

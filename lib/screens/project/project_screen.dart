@@ -299,10 +299,9 @@ Future<void> _addTask({
                               prefixIcon: const Icon(Icons.person_outline),
                             ),
                             items: widget.members.map((uid) {
-                              final displayName = widget.memberNames[uid] ?? 'Unknown User';
                               return DropdownMenuItem(
                                 value: uid,
-                                child: Text(displayName),
+                                child: Text(_displayNameForUid(uid)),
                               );
                             }).toList(),
                             onChanged: (v) => setState(() => selectedAssignee = v),
@@ -593,10 +592,9 @@ Future<void> _addTask({
                               prefixIcon: const Icon(Icons.person_outline),
                             ),
                             items: widget.members.map((uid) {
-                              final displayName = widget.memberNames[uid] ?? 'Unknown User';
                               return DropdownMenuItem(
                                 value: uid,
-                                child: Text(displayName),
+                                child: Text(_displayNameForUid(uid)),
                               );
                             }).toList(),
                             onChanged: (v) => setState(() => selectedAssignee = v),
@@ -1506,7 +1504,7 @@ Future<void> _addTask({
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
-                                  widget.memberNames[assignee] ?? assignee,
+                                  _displayNameForUid(assignee),
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: Colors.grey[600],
@@ -1603,6 +1601,28 @@ Future<void> _addTask({
         ),
       ),
     );
+  }
+
+  String _displayNameForUid(String? uid) {
+    if (uid == null) return 'Unknown User';
+    final raw = widget.memberNames[uid];
+    return _formatName(raw ?? uid);
+  }
+
+  String _formatName(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return 'Unknown User';
+    if (!trimmed.contains('@')) return trimmed;
+
+    final base = trimmed.split('@').first;
+    final tokens = base.split(RegExp(r'[._-]')).where((t) => t.isNotEmpty).toList();
+    if (tokens.isEmpty) return trimmed;
+
+    return tokens
+        .map((token) => token.length == 1
+            ? token.toUpperCase()
+            : token[0].toUpperCase() + token.substring(1))
+        .join(' ');
   }
 
   Widget _buildEmptyView() {

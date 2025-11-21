@@ -114,14 +114,14 @@ class TutorialScreen extends StatelessWidget {
         children: [
           _buildHeroCard(context),
           const SizedBox(height: AppConstants.spaceLarge),
-          ..._sections.map((section) => _TutorialCard(section: section)).toList(),
+          ..._sections.map((section) => _TutorialCard(section: section)),
           const SizedBox(height: AppConstants.spaceLarge),
           Text(
             'FAQs',
             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AppConstants.spaceSmall),
-          ..._faq.map((item) => _FaqTile(item: item)).toList(),
+          ..._faq.map((item) => _FaqTile(item: item)),
           const SizedBox(height: AppConstants.spaceLarge),
           _buildSupportCard(context),
           const SizedBox(height: AppConstants.spaceXLarge),
@@ -290,7 +290,7 @@ class _TutorialCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppConstants.spaceSmall),
-          ...section.steps.map((step) => _StepRow(text: step)).toList(),
+          ...section.steps.map((step) => _StepRow(text: step)),
           const SizedBox(height: AppConstants.spaceMedium),
           const Text(
             'Pro tips',
@@ -300,7 +300,7 @@ class _TutorialCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppConstants.spaceSmall),
-          ...section.tips.map((tip) => _TipRow(text: tip)).toList(),
+          ...section.tips.map((tip) => _TipRow(text: tip)),
         ],
       ),
     );
