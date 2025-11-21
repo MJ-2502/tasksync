@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import 'notification_preferences_service.dart';
+
 class InAppNotificationService {
   static final InAppNotificationService _instance = InAppNotificationService._internal();
   factory InAppNotificationService() => _instance;
@@ -129,6 +131,9 @@ class InAppNotificationService {
     required String title,
     required String body,
   }) async {
+    if (await NotificationPreferencesService().isWithinQuietHours()) {
+      return;
+    }
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'tasksync_updates',

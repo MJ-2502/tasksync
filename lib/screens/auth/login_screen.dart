@@ -4,6 +4,7 @@ import '../../services/auth_service.dart';
 import '../main_navigation.dart';
 import 'forgot_password_screen.dart';
 import '../auth/signup_screen.dart';
+import '../../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -114,13 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,  
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    boxShadow: AppTheme.getShadow(context),
                   ),
                   child: Form(
                     key: _formKey,

@@ -6,7 +6,11 @@ import '../../../services/auth_service.dart';
 import '../../../providers/theme_provider.dart';
 import '../auth/login_screen.dart';
 import '../about_screen.dart';
+import '../help/tutorial_screen.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_dialogs.dart';
+import '../../services/notification_preferences_service.dart';
+import '../../services/notification_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,6 +22,11 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String? _userName;
   bool _isLoading = true;
+  bool _quietHoursEnabled = false;
+  TimeOfDay _quietStart = const TimeOfDay(hour: 22, minute: 0);
+  TimeOfDay _quietEnd = const TimeOfDay(hour: 7, minute: 0);
+  bool _savingNotificationPrefs = false;
+  final NotificationPreferencesService _notificationPrefs = NotificationPreferencesService();
 
   @override
   void initState() {
@@ -36,10 +45,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         
         if (userDoc.exists) {
           final data = userDoc.data();
+          final notificationSettings =
+              (data?['notificationSettings'] as Map<String, dynamic>?) ?? {};
+          final startMinutes = (notificationSettings['quietHoursStart'] as int?) ?? 22 * 60;
+          final endMinutes = (notificationSettings['quietHoursEnd'] as int?) ?? 7 * 60;
           
           setState(() {
             _userName = (data?['displayName'] ?? data?['name'] ?? user.email?.split('@')[0]) as String?;
             _isLoading = false;
+            _quietHoursEnabled = notificationSettings['quietHoursEnabled'] == true;
+            _quietStart = _notificationPrefs.minutesToTimeOfDay(startMinutes);
+            _quietEnd = _notificationPrefs.minutesToTimeOfDay(endMinutes);
           });
         } else {
           await FirebaseFirestore.instance
@@ -54,6 +70,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() {
             _userName = user.displayName ?? user.email?.split('@')[0] ?? 'User';
             _isLoading = false;
+            _quietHoursEnabled = false;
+            _quietStart = const TimeOfDay(hour: 22, minute: 0);
+            _quietEnd = const TimeOfDay(hour: 7, minute: 0);
           });
         }
       } catch (e) {
@@ -64,47 +83,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
+  void _showLogoutDialog(BuildContext context) async {
+    final confirmed = await AppDialogs.showConfirmationDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 24),
-            Text(
-              'Are you sure you want to logout?',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await context.read<AuthService>().logout();
+      title: 'Logout',
+      content: 'Are you sure you want to logout?',
+      confirmText: 'Logout',
+      cancelText: 'Cancel',
+      isDangerous: true,
+    );
 
-              if (!context.mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF116DE6),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
+    if (confirmed == true && context.mounted) {
+      await context.read<AuthService>().logout();
+
+      if (!context.mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  Future<void> _pickTime(BuildContext context, {required bool isStart}) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: isStart ? _quietStart : _quietEnd,
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _quietStart = picked;
+        } else {
+          _quietEnd = picked;
+        }
+      });
+    }
+  }
+
+  Future<void> _saveNotificationPrefs() async {
+    setState(() => _savingNotificationPrefs = true);
+    try {
+      await _notificationPrefs.updateSettings({
+        'quietHoursEnabled': _quietHoursEnabled,
+        'quietHoursStart': _notificationPrefs.timeOfDayToMinutes(_quietStart),
+        'quietHoursEnd': _notificationPrefs.timeOfDayToMinutes(_quietEnd),
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Notification preferences updated'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _savingNotificationPrefs = false);
+      }
+    }
+  }
+
+  Future<void> _requestPushPermissions() async {
+    await NotificationService().requestPermissions();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Permission prompt sent to the system')),
     );
   }
 
@@ -213,6 +257,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             builder: (context) => const AboutScreen(),
                           ),
                         );
+                      } else if (value == 'tutorial') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const TutorialScreen(),
+                          ),
+                        );
                       }
                     },
                     itemBuilder: (context) => [
@@ -223,6 +274,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Icon(Icons.info_outline, size: 20),
                             SizedBox(width: 12),
                             Text('About TaskSync'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'tutorial',
+                        child: Row(
+                          children: [
+                            Icon(Icons.help_center_outlined, size: 20),
+                            SizedBox(width: 12),
+                            Text('Tutorial & Help'),
                           ],
                         ),
                       ),
@@ -454,6 +515,103 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           );
                         },
+                      ),
+                      const SizedBox(height: 28),
+
+                      Text(
+                        "Notifications",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: AppTheme.getShadow(context),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(Icons.notifications_active_outlined, color: Color(0xFF116DE6)),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Quiet hours',
+                                    style: TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              value: _quietHoursEnabled,
+                              title: const Text('Mute push alerts'),
+                              subtitle: const Text('Silence notifications between the selected times'),
+                              onChanged: (value) {
+                                setState(() => _quietHoursEnabled = value);
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: _quietHoursEnabled
+                                        ? () => _pickTime(context, isStart: true)
+                                        : null,
+                                    icon: const Icon(Icons.access_time),
+                                    label: Text('Start: ' + MaterialLocalizations.of(context).formatTimeOfDay(_quietStart)),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: _quietHoursEnabled
+                                        ? () => _pickTime(context, isStart: false)
+                                        : null,
+                                    icon: const Icon(Icons.access_time_outlined),
+                                    label: Text('End: ' + MaterialLocalizations.of(context).formatTimeOfDay(_quietEnd)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: _savingNotificationPrefs ? null : _saveNotificationPrefs,
+                                    icon: _savingNotificationPrefs
+                                        ? const SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                          )
+                                        : const Icon(Icons.save_alt),
+                                    label: Text(_savingNotificationPrefs ? 'Saving...' : 'Save preferences'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: _requestPushPermissions,
+                                    icon: const Icon(Icons.notifications),
+                                    label: const Text('Request permissions'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 28),
 

@@ -94,11 +94,50 @@ class _SplashScreenState extends State<SplashScreen>
           );
         } else {
           final user = FirebaseAuth.instance.currentUser;
-          return user != null
+          final Widget destination = user != null
               ? const MainNavigation()
               : const LoginScreen();
+          return _wrapWithOfflineBanner(destination);
         }
       },
+    );
+  }
+
+  Widget _wrapWithOfflineBanner(Widget child) {
+    if (!AppInitializer.offlineMode) return child;
+
+    return Stack(
+      children: [
+        child,
+        Positioned(
+          left: 16,
+          right: 16,
+          top: 16,
+          child: SafeArea(
+            child: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.amber[700],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.wifi_off, color: Colors.white),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Offline mode: showing last available data. Some actions will sync when you reconnect.',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,9 +1,15 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:timezone/timezone.dart' as tz;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+import '../firebase_options.dart';
+import 'notification_preferences_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -40,6 +46,9 @@ class NotificationService {
 
     _initialized = true;
   }
+
+  /// Re-request notification permissions manually
+  Future<void> requestPermissions() => _requestPermissions();
 
   /// Request notification permissions
   Future<void> _requestPermissions() async {
@@ -131,6 +140,11 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
+    if (await NotificationPreferencesService().isWithinQuietHours()) {
+      print('🔕 Quiet hours active. Skipping notification: $title');
+      return;
+    }
+
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'tasksync_channel',
@@ -164,10 +178,12 @@ class NotificationService {
   }) async {
     // Schedule 1 hour before due date
     final reminderTime = dueDate.subtract(const Duration(hours: 1));
+    final adjustedTime =
+        await NotificationPreferencesService().nextAvailableNotificationTime(reminderTime);
     
     // Only schedule if reminder time is in the future
-    if (reminderTime.isAfter(DateTime.now())) {
-      final scheduledDate = tz.TZDateTime.from(reminderTime, tz.local);
+    if (adjustedTime.isAfter(DateTime.now())) {
+      final scheduledDate = tz.TZDateTime.from(adjustedTime, tz.local);
       
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
@@ -195,7 +211,7 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
       );
 
-      print('⏰ Scheduled reminder for $taskTitle at $reminderTime');
+      print('⏰ Scheduled reminder for $taskTitle at $adjustedTime');
     }
   }
 
@@ -236,6 +252,7 @@ class NotificationService {
         'data': data ?? {},
         'createdAt': FieldValue.serverTimestamp(),
         'sent': false,
+        'read': false,
       });
 
       print('✅ Notification queued for user $userId');
@@ -377,10 +394,74 @@ class NotificationService {
         .doc(notificationId)
         .update({'read': true});
   }
+
+  Future<void> markAllNotificationsAsRead() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final query = await FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: user.uid)
+        .where('read', isEqualTo: false)
+        .get();
+
+    if (query.docs.isEmpty) return;
+
+    final batch = FirebaseFirestore.instance.batch();
+    for (var doc in query.docs) {
+      batch.update(doc.reference, {'read': true});
+    }
+    await batch.commit();
+  }
 }
 
 // Background message handler (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('📬 Background message: ${message.notification?.title}');
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  final FlutterLocalNotificationsPlugin notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  const AndroidInitializationSettings androidSettings =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+  const InitializationSettings settings = InitializationSettings(
+    android: androidSettings,
+  );
+
+  await notificationsPlugin.initialize(settings);
+
+  final notification = message.notification;
+  final title = notification?.title ?? message.data['title'] ?? 'TaskSync';
+  final body = notification?.body ?? message.data['body'] ?? '';
+
+  if (title.isEmpty && body.isEmpty) {
+    return;
+  }
+
+  const AndroidNotificationDetails androidDetails =
+      AndroidNotificationDetails(
+    'tasksync_channel',
+    'TaskSync Notifications',
+    channelDescription: 'Notifications for task updates and reminders',
+    importance: Importance.high,
+    priority: Priority.high,
+    showWhen: true,
+  );
+
+  const NotificationDetails details = NotificationDetails(
+    android: androidDetails,
+  );
+
+  await notificationsPlugin.show(
+    (message.messageId ??
+            DateTime.now().millisecondsSinceEpoch.toString())
+        .hashCode,
+    title,
+    body,
+    details,
+    payload: message.data.isEmpty ? null : jsonEncode(message.data),
+  );
 }

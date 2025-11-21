@@ -6,7 +6,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../project/project_screen.dart';
 import '/services/notification_service.dart';
 import '../about_screen.dart';
+import '../help/tutorial_screen.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/notification_center.dart';
 
 part 'home_dialogs.dart';
 
@@ -253,6 +255,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
                               );
                             },
+                          ),
+                          const SizedBox(width: 8),
+                          NotificationBell(
+                            iconColor: isDark ? Colors.white : Colors.black87,
                           ),
                           const SizedBox(width: 8),
                           Builder(
@@ -609,6 +615,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: isDark ? Colors.white60 : Colors.black54, 
                                     height: 1.4,
                                   ),
+                                ),
+                                const SizedBox(height: 12),
+                                TextButton.icon(
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const TutorialScreen(),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.help_outline),
+                                  label: const Text('View tutorial & tips'),
                                 ),
                               ],
                             ),

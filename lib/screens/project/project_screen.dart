@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '/services/notification_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/notification_center.dart';
 
 class ProjectScreen extends StatefulWidget {
   final String projectId;
@@ -123,13 +124,13 @@ Future<void> _addTask({
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-      // Send notification to assignee(needs cloud function to work properly)
-      // await NotificationService().notifyTaskAssignment(
-      //   assigneeId: assignee,
-      //   taskTitle: title,
-      //   projectName: widget.projectName,
-      //   taskId: taskRef.id,
-      // );
+      // Send notification to assignee
+      await NotificationService().notifyTaskAssignment(
+        assigneeId: assignee,
+        taskTitle: title,
+        projectName: widget.projectName,
+        taskId: taskRef.id,
+      );
 
       // Schedule reminder notification
       await NotificationService().scheduleTaskReminder(
@@ -170,19 +171,19 @@ Future<void> _addTask({
 
   Future<void> _updateTask(String taskId, Map<String, dynamic> updates) async {
     await _tasksRef.doc(taskId).update(updates);
-    
-    // If task was marked as completed, notify team members(needs cloud function to work properly)
-    // if (updates['completed'] == true) {
-    //   final taskDoc = await _tasksRef.doc(taskId).get();
-    //   final taskData = taskDoc.data() as Map<String, dynamic>;
-      
-    //   await NotificationService().notifyTaskCompletion(
-    //     taskTitle: taskData['title'] ?? 'Task',
-    //     projectName: widget.projectName,
-    //     projectId: widget.projectId,
-    //     memberIds: widget.members,
-    //   );
-    // }
+
+    if (updates['completed'] == true) {
+      final taskDoc = await _tasksRef.doc(taskId).get();
+      if (taskDoc.exists) {
+        final taskData = taskDoc.data() as Map<String, dynamic>;
+        await NotificationService().notifyTaskCompletion(
+          taskTitle: taskData['title'] ?? 'Task',
+          projectName: widget.projectName,
+          projectId: widget.projectId,
+          memberIds: widget.members,
+        );
+      }
+    }
   }
   Future<void> _deleteTask(String taskId) async {
     await _tasksRef.doc(taskId).delete();
@@ -897,6 +898,118 @@ Future<void> _addTask({
     );
   }
 
+  void _showProjectHelp() {
+    final helpItems = [
+      {
+        'icon': Icons.add_task,
+        'title': 'Create tasks',
+        'description':
+            'Tap the Add Task button to set assignees, due dates, reminders, and priority. High priority tasks surface at the top.',
+      },
+      {
+        'icon': Icons.swipe,
+        'title': 'Edit or delete',
+        'description':
+            'Swipe right on a card to edit (project owners or the person who created the task can edit). Swipe left to delete after confirming.',
+      },
+      {
+        'icon': Icons.fact_check,
+        'title': 'Completion rules',
+        'description':
+            'Only the project owner or whoever is assigned can check off a task. Everyone else can still view status changes in real time.',
+      },
+      {
+        'icon': Icons.visibility,
+        'title': 'New task indicators',
+        'description':
+            'Blue borders and NEW chips highlight items you have not opened yet. Opening the card marks it as seen.',
+      },
+      {
+        'icon': Icons.filter_list,
+        'title': 'Filters & stats',
+        'description': 'Use the Show chips to focus on your work, and watch the overview cards for completed, pending, and overdue counts.',
+      },
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return FractionallySizedBox(
+          heightFactor: 0.85,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[400],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'How the project view works',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Quick reminders about who can change what and where to find the main actions.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 24),
+                  ...helpItems.map(
+                    (item) => _buildHelpTile(
+                      icon: item['icon'] as IconData,
+                      title: item['title'] as String,
+                      description: item['description'] as String,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Only project owners can manage members or change project settings. Reach out to them for access changes.',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) { 
     final isDark = Theme.of(context).brightness == Brightness.dark;  
@@ -959,12 +1072,17 @@ Future<void> _addTask({
                     ),
                   ),
                   
-                  IconButton(
-                    icon: Icon(
-                      Icons.help,
-                      color: isDark ? Colors.white : Colors.black87,
+                  Row(
+                    children: [
+                      NotificationBell(iconColor: isDark ? Colors.white : Colors.black87),
+                      IconButton(
+                        icon: Icon(
+                          Icons.help,
+                          color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        onPressed: _showProjectHelp,
                       ),
-                    onPressed: () {},
+                    ],
                   ),
                 ],
               ),
@@ -1196,6 +1314,60 @@ Future<void> _addTask({
               fontSize: 11,
               color: Colors.black87,
               fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHelpTile({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1D1F24) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white70 : Colors.black87,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

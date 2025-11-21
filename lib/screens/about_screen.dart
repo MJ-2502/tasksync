@@ -59,7 +59,10 @@ class AboutScreen extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF116DE6),
+                                  gradient: LinearGradient(
+                                    colors:
+                                         [const Color(0xFF1E88E5), const Color(0xFF42A5F5)],
+                                  ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: AppTheme.getShadow(context),
                         ),
