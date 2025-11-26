@@ -229,7 +229,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   PopupMenuButton<String>(
                     offset: const Offset(0, 50),
                     icon: Icon(
-                      Icons.menu,
+                      Icons.more_vert,
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                     onSelected: (value) {

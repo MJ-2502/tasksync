@@ -23,25 +23,34 @@ class _AnimatedNavBarState extends State<AnimatedNavBar> {
     final isDark = Theme.of(context).brightness == Brightness.dark;  
 
     return Container(
-      height: 75,
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,  // CHANGED - theme-aware
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? Colors.black45 : Colors.black12,  
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+      padding: const EdgeInsets.only(top: 2),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
-      child: Row(
+      child: Container(
+        height: 75,
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? Colors.black45 : Colors.black12,
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildNavItem(icon: Icons.event, label: "Calendar", index: 0),
           _buildNavItem(icon: Icons.home, label: "Home", index: 1),
           _buildNavItem(icon: Icons.person, label: "Profile", index: 2),
         ],
+        ),
       ),
     );
   }

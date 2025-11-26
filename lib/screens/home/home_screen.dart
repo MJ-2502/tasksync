@@ -335,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           PopupMenuButton<String>(
                             offset: const Offset(0, 50),
                             icon: Icon(
-                              Icons.menu,
+                              Icons.more_vert,
                               color: isDark ? Colors.white : Colors.black87,
                             ),
                             onSelected: (value) {
@@ -410,32 +410,32 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          if (_auth.currentUser?.email == null)
-                            Padding(  // CHANGED - removed const
-                              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    "Welcome to TaskSync!",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark ? const Color(0xFF4A9EFF) : const Color(0xFF116DE6),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text( 
-                                    "Sign in to create projects and collaborate with your team.",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: isDark ? Colors.white60 : Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          else
+                          // if (_auth.currentUser?.email == null)
+                          //   Padding(  // CHANGED - removed const
+                          //     padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                          //     child: Column(
+                          //       mainAxisAlignment: MainAxisAlignment.center,
+                          //       children: [
+                          //         Text(
+                          //           "Welcome to TaskSync!",
+                          //           style: TextStyle(
+                          //             fontSize: 18,
+                          //             fontWeight: FontWeight.bold,
+                          //             color: isDark ? const Color(0xFF4A9EFF) : const Color(0xFF116DE6),
+                          //           ),
+                          //         ),
+                          //         const SizedBox(height: 8),
+                          //         Text( 
+                          //           "Sign in to create projects and collaborate with your team.",
+                          //           textAlign: TextAlign.center,
+                          //           style: TextStyle(
+                          //             color: isDark ? Colors.white60 : Colors.black54,
+                          //           ),
+                          //         ),
+                          //       ],
+                          //     ),
+                          //   )
+                          // else
                             StreamBuilder<QuerySnapshot>(
                               stream: _projectsRef
                                   .where("memberIds", arrayContains: _auth.currentUser!.uid)
@@ -577,7 +577,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),
                               borderRadius: BorderRadius.circular(12),
-                              
+                              boxShadow: AppTheme.getShadow(context),      
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

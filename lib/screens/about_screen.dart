@@ -216,7 +216,7 @@ class AboutScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                             _buildInfoRow(
                               'Developed by',
-                              'TaskSync',
+                              'TaskSync Team',
                               isDark: isDark,
                             ),
                             _buildInfoRow(

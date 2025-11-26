@@ -11,13 +11,12 @@ class TutorialScreen extends StatelessWidget {
           title: 'Getting Started',
           description: 'Create your first workspace, invite teammates, and sync tasks in minutes.',
           steps: [
-            'Tap the + button on Home to create a project. Give it a descriptive name.',
+            'Tap the "+ New Project" button on Home to create a project. Give it a descriptive name.',
             'Invite teammates from the project header by entering their email addresses.',
             'Add your first task with due dates, assignees, and priority so reminders stay accurate.',
           ],
           tips: [
             'Use short, action-oriented project names like "Q4 Launch".',
-            'Need inspiration? Pick a template from the suggestion chip when it appears.',
           ],
         ),
         _TutorialSection(
@@ -26,11 +25,10 @@ class TutorialScreen extends StatelessWidget {
           description: 'Track open projects, pending invites, and connectivity at a glance.',
           steps: [
             'The header shows sync status and pending invitations. Tap the mail icon to respond.',
-            'Scroll the project list, then tap a card to open details or long-press for quick actions.',
+            'Scroll the project list, then tap a card to open details.',
             'Use the floating + button to create projects or tasks from anywhere.',
           ],
           tips: [
-            'Swipe down to refresh if another teammate just updated the project.',
             'Offline? You can still read cached data. We’ll sync changes once you reconnect.',
           ],
         ),
@@ -41,7 +39,6 @@ class TutorialScreen extends StatelessWidget {
           steps: [
             'Inside a project tap “Add Task”, fill in title, assignee, dates, and optional flags.',
             'Toggle the priority pill to highlight critical items in the timeline.',
-            'Use the status picker (In progress / Blocked / Completed) to keep everyone aligned.',
           ],
           tips: [
             'Need a reminder? Task notifications trigger 24h and 1h before the due date.',
@@ -58,22 +55,20 @@ class TutorialScreen extends StatelessWidget {
             'Tap a task row to open it in the originating project and update the status.',
           ],
           tips: [
-            'Color badges help you see who owns the work—hover (desktop) or tap to view details.',
             'Filter to “My Tasks” from the project screen to focus on your workload only.',
           ],
         ),
         _TutorialSection(
           icon: Icons.notifications_active_outlined,
           title: 'Staying Notified',
-          description: 'Receive invitations, task reminders, and project updates across devices.',
+          description: 'Get alerted when tasks are assigned, completed, or when project invites arrive.',
           steps: [
-            'Enable push notifications when prompted on first launch or from Settings > Notifications.',
-            'Check the bell in the project header to review unread updates and mentions.',
-            'Use Profile > Theme & Preferences to choose quiet hours for notifications.',
+            'From Profile > Notifications tap “Request permissions” so your device can deliver TaskSync alerts.',
+            'Use the notification bell in the app header to open the Notification Center and mark items as read.',
+            'Set Quiet Hours in Profile > Notifications to automatically mute alerts during your downtime.',
           ],
           tips: [
-            'Invites arrive via email too, but accepting inside TaskSync adds you instantly.',
-            'If a reminder feels noisy, open the task and adjust its reminder lead time.',
+            'Use “Mark all read” in the Notification Center to clear your inbox after reviewing updates.',
           ],
         ),
       ];

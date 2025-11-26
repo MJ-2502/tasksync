@@ -26,7 +26,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   TimeOfDay _quietStart = const TimeOfDay(hour: 22, minute: 0);
   TimeOfDay _quietEnd = const TimeOfDay(hour: 7, minute: 0);
   bool _savingNotificationPrefs = false;
+  bool _isEditingName = false;
+  bool _savingName = false;
   final NotificationPreferencesService _notificationPrefs = NotificationPreferencesService();
+  final TextEditingController _nameController = TextEditingController();
 
   @override
   void initState() {
@@ -49,14 +52,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               (data?['notificationSettings'] as Map<String, dynamic>?) ?? {};
           final startMinutes = (notificationSettings['quietHoursStart'] as int?) ?? 22 * 60;
           final endMinutes = (notificationSettings['quietHoursEnd'] as int?) ?? 7 * 60;
-          
+          final resolvedName =
+              (data?['displayName'] ?? data?['name'] ?? user.email?.split('@')[0]) as String?;
+
           setState(() {
-            _userName = (data?['displayName'] ?? data?['name'] ?? user.email?.split('@')[0]) as String?;
+            _userName = resolvedName;
             _isLoading = false;
             _quietHoursEnabled = notificationSettings['quietHoursEnabled'] == true;
             _quietStart = _notificationPrefs.minutesToTimeOfDay(startMinutes);
             _quietEnd = _notificationPrefs.minutesToTimeOfDay(endMinutes);
           });
+          _nameController.text = resolvedName ?? '';
         } else {
           await FirebaseFirestore.instance
               .collection('users')
@@ -74,12 +80,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _quietStart = const TimeOfDay(hour: 22, minute: 0);
             _quietEnd = const TimeOfDay(hour: 7, minute: 0);
           });
+          _nameController.text = _userName ?? '';
         }
       } catch (e) {
         setState(() => _isLoading = false);
       }
     } else {
       setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _startEditingName() {
+    setState(() {
+      _nameController.text = _userName ?? '';
+      _isEditingName = true;
+    });
+  }
+
+  void _cancelEditingName() {
+    setState(() {
+      _nameController.text = _userName ?? '';
+      _isEditingName = false;
+    });
+  }
+
+  Future<void> _saveDisplayName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final trimmed = _nameController.text.trim();
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to update your name')),
+      );
+      return;
+    }
+
+    if (trimmed.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Name can\'t be empty')),
+      );
+      return;
+    }
+
+    setState(() => _savingName = true);
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        'displayName': trimmed,
+      });
+      await user.updateDisplayName(trimmed);
+
+      if (!mounted) return;
+      setState(() {
+        _userName = trimmed;
+        _isEditingName = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Display name updated')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update name. Try again.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _savingName = false);
+      }
     }
   }
 
@@ -152,53 +224,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildThemeOption(
-    BuildContext context,
-    String label,
-    IconData icon,
-    ThemeMode mode,
-    ThemeProvider themeProvider,
-  ) {
-    final isSelected = themeProvider.themeMode == mode;
-    final isDark = Theme.of(context).brightness == Brightness.dark;  // ADD THIS
-    
-    return GestureDetector(
-      onTap: () => themeProvider.setTheme(mode),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF116DE6)
-              : Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: isSelected ? null : AppTheme.getShadow(context),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: isSelected 
-                  ? Colors.white 
-                  : (isDark ? Colors.white70 : Colors.black54), 
-              size: 20,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: isSelected 
-                    ? Colors.white 
-                    : (isDark ? Colors.white70 : Colors.black54), 
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -246,7 +271,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   PopupMenuButton<String>(
                     offset: const Offset(0, 50),
                     icon: Icon(
-                      Icons.menu,
+                      Icons.more_vert,
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                     onSelected: (value) {
@@ -267,7 +292,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       }
                     },
                     itemBuilder: (context) => [
-                      PopupMenuItem(
+                      const PopupMenuItem(
                         value: 'about',
                         child: Row(
                           children: [
@@ -277,7 +302,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                       ),
-                      PopupMenuItem(
+                      const PopupMenuItem(
                         value: 'tutorial',
                         child: Row(
                           children: [
@@ -337,26 +362,85 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             if (_isLoading)
                               const CircularProgressIndicator()
                             else ...[
-                              if (_userName != null && _userName!.isNotEmpty)
-                                Text(
-                                  _userName!,
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white : Colors.black87,  // ADDED
-                                  ),
+                              if (_isEditingName) ...[
+                                TextField(
+                                  controller: _nameController,
+                                  enabled: !_savingName,
+                                  autofocus: true,
                                   textAlign: TextAlign.center,
+                                  textCapitalization: TextCapitalization.words,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
+                                  decoration: InputDecoration(
+                                    labelText: 'User name',
+                                    border: const OutlineInputBorder(),
+                                    labelStyle: TextStyle(
+                                      color: isDark ? Colors.white60 : Colors.black54,
+                                    ),
+                                  ),
                                 ),
-                              if (_userName != null && _userName!.isNotEmpty)
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        onPressed: _savingName ? null : _saveDisplayName,
+                                        child: _savingName
+                                            ? const SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                              )
+                                            : const Text('Save name'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        onPressed: _savingName ? null : _cancelEditingName,
+                                        child: const Text('Cancel'),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ] else ...[
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _userName?.isNotEmpty == true
+                                          ? _userName!
+                                          : 'Add your name',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : Colors.black87,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                     TextButton.icon(
+                                       onPressed: _startEditingName,
+                                       icon: const SizedBox.shrink(),
+                                       label: Row(
+                                         mainAxisSize: MainAxisSize.min,
+                                         children: const [
+                                           Text(
+                                             'Edit Name',
+                                             style: TextStyle(color: Color(0xFF116DE6)),
+                                           ),
+                                           SizedBox(width: 6),
+                                           Icon(Icons.edit_outlined, color: Color(0xFF116DE6)),
+                                         ],
+                                       ),
+                                       style: TextButton.styleFrom(
+                                         foregroundColor: const Color(0xFF116DE6),
+                                       ),
+                                     ),
+                                  ],
+                                ),
                                 const SizedBox(height: 8),
-                              Text(
-                                user?.email ?? "No email",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: isDark ? Colors.white60 : Colors.black54,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
+                              ],
                             ],
                           ],
                         ),
@@ -370,6 +454,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Email Card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFAFAFA),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: AppTheme.getShadow(context),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.email_outlined, color: Color(0xFF116DE6), size: 24),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Email",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.white60 : Colors.black54,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    user?.email ?? 'No email',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isDark ? Colors.white70 : Colors.black87,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -428,7 +555,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Theme Selector
+                      // Theme Switch
                       Consumer<ThemeProvider>(
                         builder: (context, themeProvider, child) {
                           return Container(
@@ -439,77 +566,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: AppTheme.getShadow(context),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Row(
                               children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      themeProvider.isDarkMode
-                                          ? Icons.dark_mode
-                                          : Icons.light_mode,
-                                      color: const Color(0xFF116DE6),
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            "Theme",
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: isDark ? Colors.white : Colors.black87,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            "Choose your preferred theme",
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: isDark ? Colors.white60 : Colors.black54,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                Icon(
+                                  themeProvider.isDarkMode
+                                      ? Icons.dark_mode
+                                      : Icons.light_mode,
+                                  color: const Color(0xFF116DE6),
+                                  size: 24,
                                 ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildThemeOption(
-                                        context,
-                                        'Light',
-                                        Icons.light_mode_outlined,
-                                        ThemeMode.light,
-                                        themeProvider,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Dark Mode",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? Colors.white : Colors.black87,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _buildThemeOption(
-                                        context,
-                                        'Dark',
-                                        Icons.dark_mode_outlined,
-                                        ThemeMode.dark,
-                                        themeProvider,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        themeProvider.isDarkMode ? "Dark theme enabled" : "Light theme enabled",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isDark ? Colors.white60 : Colors.black54,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _buildThemeOption(
-                                        context,
-                                        'System',
-                                        Icons.settings_suggest_outlined,
-                                        ThemeMode.system,
-                                        themeProvider,
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                ),
+                                Switch.adaptive(
+                                  value: themeProvider.isDarkMode,
+                                  onChanged: (value) {
+                                    themeProvider.setTheme(value ? ThemeMode.dark : ThemeMode.light);
+                                  },
+                                  activeColor: const Color(0xFF116DE6),
                                 ),
                               ],
                             ),
@@ -539,13 +634,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              children: const [
-                                Icon(Icons.notifications_active_outlined, color: Color(0xFF116DE6)),
-                                SizedBox(width: 12),
+                              children: [
+                                const Icon(Icons.notifications_active_outlined, color: Color(0xFF116DE6)),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     'Quiet hours',
-                                    style: TextStyle(fontWeight: FontWeight.w600),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
                                   ),
                                 ),
                               ],
